@@ -201,12 +201,21 @@ function previewColumn(sheetId, sheetName, columnLetter) {
     const sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
     if (!sheet) return { success: false, error: 'Sheet not found.' };
     const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return { success: true, data: [] };
-    const values = sheet.getRange(2, colIndex, lastRow - 1, 1).getValues()
-      .flat()
-      .filter(v => v !== '' && v != null)
-      .map(v => String(v));
-    return { success: true, data: values };
+    if (lastRow < 2) return { success: true, data: [], stats: { blanksRemoved: 0, duplicatesRemoved: 0 } };
+    const raw = sheet.getRange(2, colIndex, lastRow - 1, 1).getValues().flat();
+    const seen = {};
+    const values = [];
+    let blanks = 0;
+    let dups = 0;
+    for (let i = 0; i < raw.length; i++) {
+      const v = String(raw[i] == null ? '' : raw[i]).trim();
+      if (v === '') { blanks++; continue; }
+      const key = v.toLowerCase();
+      if (seen[key]) { dups++; continue; }
+      seen[key] = true;
+      values.push(v);
+    }
+    return { success: true, data: values, stats: { blanksRemoved: blanks, duplicatesRemoved: dups } };
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -346,6 +355,8 @@ function syncAll(formId) {
     }
     let processed = 0;
     let errors = 0;
+    let cleanedBlanks = 0;
+    let cleanedDuplicates = 0;
     const results = [];
     const bySheet = {};
     mappings.forEach(m => { (bySheet[m.sheetId] = bySheet[m.sheetId] || []).push(m); });
@@ -353,6 +364,8 @@ function syncAll(formId) {
       const res = engine.applyMappings(formId, bySheet[sid], sid);
       processed += res.processed;
       errors += res.errors;
+      cleanedBlanks += (res.cleaned && res.cleaned.blanks) || 0;
+      cleanedDuplicates += (res.cleaned && res.cleaned.duplicates) || 0;
       results.push.apply(results, res.results);
     });
     const success = errors === 0 && processed > 0;
@@ -365,7 +378,14 @@ function syncAll(formId) {
       success: success,
       mode: 'manual'
     });
-    return { success: success, processed: processed, errors: errors, results: results, message: `Processed ${processed}/${mappings.length} mappings.` };
+    return {
+      success: success,
+      processed: processed,
+      errors: errors,
+      results: results,
+      cleaned: { blanks: cleanedBlanks, duplicates: cleanedDuplicates },
+      message: `Processed ${processed}/${mappings.length} mappings.`
+    };
   } catch (e) {
     return { success: false, processed: 0, errors: 0, message: e.message };
   }

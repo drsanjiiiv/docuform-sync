@@ -110,9 +110,15 @@ class SyncEngine {
 
     const pairs = [];
     let removedChoices = 0;
+    let blankRemoved = 0;
+    let duplicateRemoved = 0;
+    const seen = {};
     for (let i = 0; i < rawChoices.length; i++) {
       const v = String(rawChoices[i] == null ? "" : rawChoices[i]).trim();
-      if (v === "") continue;
+      if (v === "") {
+        blankRemoved++;
+        continue;
+      }
       if (rawCaps) {
         const maxVal = Number(rawCaps[i]);
         if (!isNaN(maxVal) && maxVal <= 0) {
@@ -120,6 +126,12 @@ class SyncEngine {
           continue;
         }
       }
+      const key = v.toLowerCase();
+      if (seen[key]) {
+        duplicateRemoved++;
+        continue;
+      }
+      seen[key] = true;
       let sortKey = v;
       if (rawSort) {
         sortKey = String(rawSort[i] == null ? "" : rawSort[i]).trim();
@@ -139,6 +151,8 @@ class SyncEngine {
     return {
       choices,
       removedChoices,
+      blankRemoved,
+      duplicateRemoved,
       totalRows,
       rawCount: pairs.length
     };
@@ -197,9 +211,20 @@ class SyncEngine {
         return { success: false, message: "Question ID not found." };
       }
       const type = targetItem.getType();
-      const cleanChoices = (choices || [])
-        .map(c => c == null ? "" : String(c).trim())
-        .filter(c => c !== null && c !== undefined);
+      const seen = {};
+      let hasBlank = false;
+      const cleanChoices = [];
+      (choices || []).forEach(c => {
+        const v = c == null ? "" : String(c).trim();
+        if (v === "") {
+          if (!hasBlank) { hasBlank = true; cleanChoices.push(v); }
+          return;
+        }
+        const key = v.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        cleanChoices.push(v);
+      });
 
       if (cleanChoices.length === 0) {
         return { success: false, message: "No valid choices to populate." };
@@ -247,6 +272,8 @@ class SyncEngine {
     if (!sheetId) return { success: false, processed: 0, errors: 0, results: [], message: "No Spreadsheet ID configured." };
     let processed = 0;
     let errors = 0;
+    let cleanedBlanks = 0;
+    let cleanedDuplicates = 0;
     const results = [];
 
     for (let i = 0; i < mappings.length; i++) {
@@ -275,10 +302,16 @@ class SyncEngine {
           results.push({ index: i, status: "skipped", message: "No choices found in the selected column." });
           continue;
         }
+        cleanedBlanks += prep.blankRemoved || 0;
+        cleanedDuplicates += prep.duplicateRemoved || 0;
         const popResult = this.populateChoices(formId, mapping.questionId, prep.choices);
         if (popResult.success) {
           processed++;
-          results.push({ index: i, status: "ok", message: popResult.message });
+          let note = popResult.message;
+          if (prep.blankRemoved || prep.duplicateRemoved) {
+            note += " (removed " + (prep.blankRemoved || 0) + " blank, " + (prep.duplicateRemoved || 0) + " duplicate)";
+          }
+          results.push({ index: i, status: "ok", message: note });
         } else {
           errors++;
           results.push({ index: i, status: "failed", message: popResult.message });
@@ -293,6 +326,7 @@ class SyncEngine {
       processed,
       errors,
       results,
+      cleaned: { blanks: cleanedBlanks, duplicates: cleanedDuplicates },
       message: `Processed ${processed}/${mappings.length} mappings.`
     };
   }
@@ -309,7 +343,9 @@ class SyncEngine {
           totalRows: prep.totalRows,
           validChoices: prep.choices.filter(c => c !== "").length,
           blankIncluded: prep.choices.length > 0 && prep.choices[0] === "",
-          removedChoices: prep.removedChoices
+          removedChoices: prep.removedChoices,
+          blankRemoved: prep.blankRemoved,
+          duplicateRemoved: prep.duplicateRemoved
         }
       };
     } catch (e) {

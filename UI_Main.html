@@ -500,7 +500,12 @@
         .withSuccessHandler(function (res) {
           btn.disabled = false;
           btn.textContent = '⚡ Sync All';
-          if (res.success) toast('✓ Synced ' + res.processed + ' question(s)!', 'success');
+          if (res.success) {
+            var cl = res.cleaned;
+            var msg = '✓ Synced ' + res.processed + ' question(s)!';
+            if (cl && (cl.blanks || cl.duplicates)) msg += ' Cleaned ' + cl.blanks + ' blank + ' + cl.duplicates + ' duplicate row(s).';
+            toast(msg, 'success');
+          }
           else toast('⚠ ' + (res.message || 'Sync completed with issues.'), 'warning');
         })
         .withFailureHandler(function (err) {

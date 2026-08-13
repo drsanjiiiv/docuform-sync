@@ -525,6 +525,9 @@
         .withSuccessHandler(function (res) {
           preview = res.success ? res.data : [];
           renderPreviewBox();
+          if (res.stats && (res.stats.blanksRemoved || res.stats.duplicatesRemoved)) {
+            toast('Cleaned ' + res.stats.blanksRemoved + ' blank + ' + res.stats.duplicatesRemoved + ' duplicate row(s). Only unique values are synced.', 'warning');
+          }
         })
         .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
         .previewColumn(sheetId, sheetName, column);
@@ -611,7 +614,14 @@
           toast('Mapping saved — syncing question…', 'info');
           google.script.run
             .withSuccessHandler(function (sres) {
-              if (sres.success) toast('✓ Synced ' + sres.processed + ' option(s)!', 'success');
+              if (sres.success) {
+                var cl = sres.cleaned;
+                if (cl && (cl.blanks || cl.duplicates)) {
+                  toast('✓ Synced ' + sres.processed + ' option(s) — removed ' + cl.blanks + ' blank + ' + cl.duplicates + ' duplicate.', 'success');
+                } else {
+                  toast('✓ Synced ' + sres.processed + ' option(s)!', 'success');
+                }
+              }
               else toast('⚠ ' + (sres.message || 'Sync completed with issues.'), 'warning');
               setTimeout(function () { google.script.host.close(); }, 900);
             })
