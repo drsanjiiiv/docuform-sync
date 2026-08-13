@@ -40,11 +40,14 @@ function getLinkedSpreadsheet(formId) {
     const id = (formId || "").trim();
     const form = id ? (FormApp.getActiveForm() || FormApp.openById(id)) : FormApp.getActiveForm();
     if (!form) return { success: false, error: "No form found." };
-    const dest = form.getDestination(FormApp.DestinationType.SPREADSHEET);
-    if (!dest) {
-      return { success: false, error: "No linked spreadsheet found. Add a response destination in the form, or paste a Sheet ID." };
+    let destId = null;
+    try {
+      destId = form.getDestinationId();
+    } catch (e) {}
+    if (!destId) {
+      return { success: false, error: "No linked spreadsheet found. Add a response destination in the form, or paste a Sheet ID / Browse." };
     }
-    return { success: true, data: dest.getId() };
+    return { success: true, data: destId };
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -142,6 +145,173 @@ function applyMappings(formId, mappingsJson, sheetId) {
       mode: "manual"
     });
     return result;
+  } catch (e) {
+    return { success: false, processed: 0, errors: 0, message: e.message };
+  }
+}
+
+// ============================ SIMPLE FLOW (Form Ranger style) ============================
+
+function getSheetHeaders(sheetId, sheetName) {
+  try {
+    const ss = SpreadsheetApp.openById(sheetId);
+    const sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
+    if (!sheet) return { success: false, error: 'Sheet not found.' };
+    const lastCol = sheet.getLastColumn();
+    const headers = lastCol > 0
+      ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h == null ? '' : h).trim())
+      : [];
+    return { success: true, data: headers };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function previewColumn(sheetId, sheetName, columnLetter) {
+  try {
+    const engine = new SyncEngine();
+    const colIndex = engine._columnLetterToIndex(columnLetter);
+    const ss = SpreadsheetApp.openById(sheetId);
+    const sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
+    if (!sheet) return { success: false, error: 'Sheet not found.' };
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { success: true, data: [] };
+    const values = sheet.getRange(2, colIndex, lastRow - 1, 1).getValues()
+      .flat()
+      .filter(v => v !== '' && v != null)
+      .map(v => String(v));
+    return { success: true, data: values };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function saveQuestionMapping(formId, mappingJson) {
+  try {
+    const m = JSON.parse(mappingJson);
+    if (!formId || !m || !m.questionId || !m.sheetId || !m.column) {
+      return { success: false, error: 'Invalid mapping. Sheet and column are required.' };
+    }
+    const qcfg = {
+      enabled: true,
+      sheetId: m.sheetId,
+      sheetName: m.sheetName || '',
+      column: m.column,
+      capacityColumn: m.capacityColumn || '',
+      sortColumn: m.sortColumn || '',
+      sortOrder: m.sortOrder || 'none',
+      startRow: m.startRow || 1,
+      endRow: m.endRow || 0,
+      includeBlank: !!m.includeBlank,
+      rangeName: m.rangeName || ''
+    };
+    saveQuestionConfig(formId, String(m.questionId), qcfg);
+    if (m.rangeName && m.sheetId && m.column) {
+      saveNamedRange(formId, m.rangeName, {
+        sheetId: m.sheetId,
+        sheetName: m.sheetName || '',
+        column: m.column,
+        capacityColumn: qcfg.capacityColumn,
+        sortColumn: qcfg.sortColumn,
+        sortOrder: qcfg.sortOrder,
+        startRow: qcfg.startRow,
+        endRow: qcfg.endRow,
+        includeBlank: qcfg.includeBlank
+      });
+    }
+    return { success: true, message: 'Question mapping saved.' };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function clearQuestionMapping(formId, questionId) {
+  try {
+    if (formId && questionId) deleteQuestionConfig(formId, questionId);
+    return { success: true, message: 'Mapping cleared.' };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function loadQuestionMappings(formId) {
+  try {
+    const c = getFormConfig(formId) || {};
+    return {
+      success: true,
+      data: {
+        questions: c.questions || {},
+        namedRanges: c.namedRanges || {},
+        sheetId: c.sheetId || '',
+        autoSync: {
+          autoSyncEnabled: !!c.autoSyncEnabled,
+          refreshInterval: c.refreshInterval || 60,
+          refreshOnSubmit: !!c.refreshOnSubmit
+        }
+      }
+    };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function syncQuestion(formId, questionId) {
+  try {
+    const qcfg = getQuestionsConfig(formId)[String(questionId)];
+    if (!qcfg || !qcfg.enabled || !qcfg.sheetId) {
+      return { success: false, processed: 0, errors: 0, message: 'No mapping configured for this question.' };
+    }
+    const engine = new SyncEngine();
+    const result = engine.applyMappings(formId, [Object.assign({ questionId: String(questionId) }, qcfg)], qcfg.sheetId);
+    engine.recordSyncEntry({
+      formId: formId,
+      sheetsId: qcfg.sheetId,
+      mappingsCount: 1,
+      processed: result.processed,
+      errors: result.errors,
+      success: result.success,
+      mode: 'manual'
+    });
+    return result;
+  } catch (e) {
+    return { success: false, processed: 0, errors: 0, message: e.message };
+  }
+}
+
+function syncAll(formId) {
+  try {
+    const qs = getQuestionsConfig(formId);
+    const engine = new SyncEngine();
+    const mappings = [];
+    Object.keys(qs).forEach(qid => {
+      const q = qs[qid];
+      if (q && q.enabled && q.sheetId) mappings.push(Object.assign({ questionId: qid }, q));
+    });
+    if (mappings.length === 0) {
+      return { success: false, processed: 0, errors: 0, message: 'No enabled question mappings to sync.' };
+    }
+    let processed = 0;
+    let errors = 0;
+    const results = [];
+    const bySheet = {};
+    mappings.forEach(m => { (bySheet[m.sheetId] = bySheet[m.sheetId] || []).push(m); });
+    Object.keys(bySheet).forEach(sid => {
+      const res = engine.applyMappings(formId, bySheet[sid], sid);
+      processed += res.processed;
+      errors += res.errors;
+      results.push.apply(results, res.results);
+    });
+    const success = errors === 0 && processed > 0;
+    engine.recordSyncEntry({
+      formId: formId,
+      sheetsId: '',
+      mappingsCount: mappings.length,
+      processed: processed,
+      errors: errors,
+      success: success,
+      mode: 'manual'
+    });
+    return { success: success, processed: processed, errors: errors, results: results, message: `Processed ${processed}/${mappings.length} mappings.` };
   } catch (e) {
     return { success: false, processed: 0, errors: 0, message: e.message };
   }

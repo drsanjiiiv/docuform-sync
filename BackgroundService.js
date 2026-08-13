@@ -30,15 +30,15 @@ function performAutoSync(e) {
   let configs = [];
   if (eventFormId) {
     const cfg = getFormConfig(eventFormId);
-    if (cfg && Array.isArray(cfg.mappings) && cfg.mappings.length > 0) {
+    if (cfg && cfg.questions && Object.keys(cfg.questions).length > 0) {
       configs.push(cfg);
     }
   } else if (savedFormId) {
     const cfg = getFormConfig(savedFormId);
-    if (cfg && Array.isArray(cfg.mappings)) configs.push(cfg);
+    if (cfg && cfg.questions) configs.push(cfg);
   }
   if (configs.length === 0) {
-    configs = getAllFormConfigs().filter(c => Array.isArray(c.mappings) && c.mappings.length > 0);
+    configs = getAllFormConfigs().filter(c => c.questions && Object.keys(c.questions).length > 0);
   }
 
   if (configs.length === 0) {
@@ -51,28 +51,42 @@ function performAutoSync(e) {
 
   for (const cfg of configs) {
     const formId = cfg.formId || savedFormId;
-    const sheetId = cfg.sheetId || props.getProperty(KEYS.SPREADSHEET_RANGE);
-    if (!formId || !sheetId) {
-      Logger.log("[DocuForm Sync] Auto-Sync skipped: missing form/sheet ID for a config.");
+    if (!formId) continue;
+    const qs = cfg.questions || {};
+    const mappings = [];
+    Object.keys(qs).forEach(qid => {
+      const q = qs[qid];
+      if (q && q.enabled && q.sheetId) mappings.push(Object.assign({ questionId: qid }, q));
+    });
+    if (mappings.length === 0) {
+      Logger.log("[DocuForm Sync] Auto-Sync skipped: no enabled mappings for a config.");
       continue;
     }
     try {
       engine.resetTimer();
-      const result = engine.applyMappings(formId, cfg.mappings || [], sheetId);
+      let processed = 0;
+      let errors = 0;
+      const bySheet = {};
+      mappings.forEach(m => { (bySheet[m.sheetId] = bySheet[m.sheetId] || []).push(m); });
+      Object.keys(bySheet).forEach(sid => {
+        const result = engine.applyMappings(formId, bySheet[sid], sid);
+        processed += result.processed;
+        errors += result.errors;
+      });
       engine.recordSyncEntry({
         formId: formId,
-        sheetsId: sheetId,
-        mappingsCount: (cfg.mappings || []).length,
-        processed: result.processed,
-        errors: result.errors,
-        success: result.success,
+        sheetsId: "",
+        mappingsCount: mappings.length,
+        processed: processed,
+        errors: errors,
+        success: errors === 0 && processed > 0,
         mode: mode
       });
-      if (result.processed > 0 || result.success) {
+      if (processed > 0) {
         anySuccess = true;
         props.setProperty(KEYS.LAST_SYNC_TIMESTAMP, new Date().toISOString());
       }
-      Logger.log(`[DocuForm Sync] ${mode} sync for ${formId}: ${result.message}`);
+      Logger.log(`[DocuForm Sync] ${mode} sync for ${formId}: processed ${processed}/${mappings.length}.`);
     } catch (err) {
       Logger.log(`[DocuForm Sync] ERROR syncing ${formId}: ${err.toString()}`);
     }

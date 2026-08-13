@@ -125,6 +125,45 @@ function getAllFormConfigs() {
   return out;
 }
 
+// ============================ PER-QUESTION MAPPINGS ============================
+// Config shape: { formId, sheetId, sheetName,
+//                 questions: { "<questionId>": {enabled, sheetId, sheetName, column,
+//                   capacityColumn, sortColumn, sortOrder, startRow, endRow, includeBlank, rangeName} },
+//                 namedRanges: { "<rangeName>": {...range} },
+//                 autoSyncEnabled, refreshInterval, refreshOnSubmit }
+
+function getQuestionsConfig(formId) {
+  var c = getFormConfig(formId) || {};
+  return c.questions || {};
+}
+
+function saveQuestionConfig(formId, questionId, qcfg) {
+  var c = getFormConfig(formId) || { formId: formId };
+  c.questions = c.questions || {};
+  c.questions[String(questionId)] = qcfg;
+  saveFormConfig(formId, c);
+}
+
+function deleteQuestionConfig(formId, questionId) {
+  var c = getFormConfig(formId);
+  if (c && c.questions) {
+    delete c.questions[String(questionId)];
+    saveFormConfig(formId, c);
+  }
+}
+
+function getNamedRanges(formId) {
+  var c = getFormConfig(formId) || {};
+  return c.namedRanges || {};
+}
+
+function saveNamedRange(formId, rangeName, range) {
+  var c = getFormConfig(formId) || { formId: formId };
+  c.namedRanges = c.namedRanges || {};
+  c.namedRanges[String(rangeName)] = range;
+  saveFormConfig(formId, c);
+}
+
 // ============================ FILE PICKER ============================
 
 /**
