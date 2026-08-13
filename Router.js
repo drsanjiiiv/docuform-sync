@@ -73,6 +73,26 @@ function getSheetNames(sheetId) {
   }
 }
 
+function listSpreadsheets(maxResults) {
+  try {
+    const max = Math.min(maxResults || 50, 100);
+    const out = [];
+    const files = DriveApp.searchFiles(
+      'mimeType = "application/vnd.google-apps.spreadsheet" and trashed = false'
+    );
+    while (files.hasNext() && out.length < max) {
+      const f = files.next();
+      out.push({ id: f.getId(), name: f.getName() });
+    }
+    if (out.length === 0) {
+      return { success: true, data: [], message: "No spreadsheets found in your Drive." };
+    }
+    return { success: true, data: out };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
 // ============================ QUESTIONS & CHOICES ============================
 
 function getFormQuestions(formId) {

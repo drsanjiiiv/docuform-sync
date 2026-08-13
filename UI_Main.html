@@ -3,7 +3,6 @@
 <head>
   <base target="_top">
   <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
-  <script src="https://apis.google.com/js/api.js"></script>
 
   <style>
     :root {
@@ -166,12 +165,6 @@
     .modal-head strong { font-size: 14px; color: var(--primary); }
     .modal-close { border: none; background: transparent; font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
     .modal-close:hover { background: var(--bg); }
-
-    .hint-warn {
-      font-size: 11px; color: var(--warn); background: var(--warn-bg);
-      padding: 7px 10px; border-radius: 8px; margin-top: 8px; line-height: 1.4; display: none;
-    }
-    .hint-warn a { color: var(--warn); font-weight: 600; text-decoration: none; }
 
     .wiz-steps { display: flex; gap: 4px; padding: 10px 14px 0; flex-shrink: 0; }
     .wiz-step { flex: 1; text-align: center; font-size: 11px; color: var(--faint); font-weight: 500; }
@@ -525,31 +518,75 @@
 
     function renderStepSheet() {
       $('wizBody').innerHTML =
-        '<label class="field-label">Spreadsheet</label>' +
-        '<div class="sheet-input-row">' +
-        '  <input id="modalSheetIdInput" type="text" value="' + escapeHtml(modalSheetId) + '" placeholder="Paste Sheet ID" />' +
-        '  <button class="picker-btn" onclick="pickSpreadsheet()">📂 Browse</button>' +
+        '<label class="field-label">Choose a spreadsheet</label>' +
+        '<select id="modalSpreadsheetSelect" onchange="onSpreadsheetPick(this.value)">' +
+        '  <option value="">⏳ Loading your sheets…</option>' +
+        '</select>' +
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:10px">' +
+        '  <div style="flex:1;height:1px;background:var(--border)"></div>' +
+        '  <span style="font-size:11px;color:var(--faint);flex-shrink:0">or paste a Sheet link / ID</span>' +
+        '  <div style="flex:1;height:1px;background:var(--border)"></div>' +
         '</div>' +
-        '<div class="hint-warn" id="pickerKeyHint">Picking needs a Cloud API key — use the ⚡ DocuForm Sync menu → 🔑 Set Picker Key.</div>' +
+        '<div class="sheet-input-row" style="margin-top:8px">' +
+        '  <input id="modalSheetIdInput" type="text" value="' + escapeHtml(modalSheetId) + '" placeholder="Paste Sheet ID" />' +
+        '  <button class="picker-btn" onclick="applyPastedSheet()">Apply</button>' +
+        '</div>' +
         '<div style="margin-top:6px">' +
         '  <button class="btn btn-sm" onclick="useLinkedSheet()">⚡ Use linked sheet</button>' +
         '</div>' +
         '<label class="field-label" style="margin-top:10px">Sheet Tab</label>' +
         '<select id="modalSheetNameSelect"></select>';
 
-      checkPickerKeyHint();
+      loadSpreadsheetList();
       loadSheetNamesForModal();
       if (!modalSheetId) useLinkedSheet();
     }
 
-    function checkPickerKeyHint() {
+    function loadSpreadsheetList() {
       google.script.run
-        .withSuccessHandler(function (cfg) {
-          var hint = $('pickerKeyHint');
-          if (hint) hint.style.display = (!cfg || !cfg.developerKey) ? 'block' : 'none';
+        .withSuccessHandler(function (res) {
+          var sel = $('modalSpreadsheetSelect');
+          if (!sel) return;
+          if (!res.success || !res.data.length) {
+            sel.innerHTML = '<option value="">' + escapeHtml((res && res.message) || 'No spreadsheets found') + '</option>';
+            return;
+          }
+          var opts = '<option value="">-- Select a spreadsheet --</option>';
+          res.data.forEach(function (s) {
+            opts += '<option value="' + escapeHtml(s.id) + '"' + (s.id === modalSheetId ? ' selected' : '') + '>' + escapeHtml(s.name) + '</option>';
+          });
+          sel.innerHTML = opts;
         })
-        .withFailureHandler(function () {})
-        .getPickerConfig();
+        .withFailureHandler(function (err) {
+          var sel = $('modalSpreadsheetSelect');
+          if (sel) sel.innerHTML = '<option value="">Could not load sheets</option>';
+        })
+        .listSpreadsheets(100);
+    }
+
+    function onSpreadsheetPick(id) {
+      if (!id) return;
+      modalSheetId = id;
+      $('modalSheetIdInput').value = id;
+      loadSheetNamesForModal();
+    }
+
+    function extractSheetId(value) {
+      var v = (value || '').trim();
+      if (!v) return '';
+      if (/[?/]/.test(v)) {
+        var m = v.match(/[a-zA-Z0-9_-]{25,}/);
+        if (m) return m[0];
+      }
+      return v;
+    }
+
+    function applyPastedSheet() {
+      var id = extractSheetId($('modalSheetIdInput').value);
+      if (!id) { toast('Paste a Sheet ID or link.', 'warning'); return; }
+      modalSheetId = id;
+      $('modalSheetIdInput').value = id;
+      loadSheetNamesForModal();
     }
 
     function useLinkedSheet() {
@@ -588,39 +625,7 @@
     }
 
     function pickSpreadsheet() {
-      google.script.run
-        .withSuccessHandler(function (cfg) {
-          if (!cfg || !cfg.appId || !cfg.developerKey) {
-            var hint = $('pickerKeyHint');
-            if (hint) hint.style.display = 'block';
-            return;
-          }
-          window.__pickerCfg = cfg;
-          if (typeof gapi !== 'undefined' && gapi.load) {
-            gapi.load('picker', function () {
-              var view = new google.picker.View(google.picker.ViewId.SPREADSHEETS);
-              var picker = new google.picker.PickerBuilder()
-                .enableFeature(google.picker.Feature.NAV_HIDDEN)
-                .setAppId(cfg.appId).setDeveloperKey(cfg.developerKey).setOAuthToken(cfg.token)
-                .addView(view)
-                .setCallback(function (data) {
-                  if (data.action === google.picker.Action.PICKED) {
-                    var doc = data[google.picker.Response.DOCUMENTS][0];
-                    modalSheetId = doc[google.picker.Document.ID];
-                    $('modalSheetIdInput').value = modalSheetId;
-                    toast('Sheet selected: ' + (doc[google.picker.Document.NAME] || 'Sheet'), 'success');
-                    loadSheetNamesForModal();
-                  }
-                })
-                .build();
-              picker.setVisible(true);
-            });
-          } else {
-            toast('Picker library not loaded. Reopen the sidebar.', 'warning');
-          }
-        })
-        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
-        .getPickerConfig();
+      toast('Choose a spreadsheet from the list above, or paste a Sheet link / ID.', 'info');
     }
 
     // --- step 2 : select range ---

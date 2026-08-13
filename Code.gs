@@ -19,16 +19,12 @@ function onOpen(e) {
       ui.createAddonMenu()
         .addItem("⚡ Open DocuForm Sync", "INITIALIZE_ADDON_SIDEBAR")
         .addSeparator()
-        .addItem("🔑 Set Picker Key", "SET_PICKER_KEY")
-        .addSeparator()
         .addItem("❓ Help", "showHelp")
         .addToUi();
     } catch (err) {
       // Not yet installed as an add-on (bound-script testing).
       ui.createMenu("⚡ DocuForm Sync")
         .addItem("Open DocuForm Sync", "INITIALIZE_ADDON_SIDEBAR")
-        .addSeparator()
-        .addItem("Set Picker Key", "SET_PICKER_KEY")
         .addSeparator()
         .addItem("Help", "showHelp")
         .addToUi();
@@ -162,45 +158,4 @@ function saveNamedRange(formId, rangeName, range) {
   c.namedRanges = c.namedRanges || {};
   c.namedRanges[String(rangeName)] = range;
   saveFormConfig(formId, c);
-}
-
-// ============================ FILE PICKER ============================
-
-/**
- * Picker config for the Google Picker API in the sidebar.
- * PICKER_APP_ID is the Cloud project number (public — safe to commit).
- * The Browser API key is stored in Script Properties, NEVER in the repo.
- * Set it once via the "🔑 Set Picker Key" menu item (or SET_PICKER_KEY()).
- */
-var PICKER_APP_ID = "939872818516";
-var PICKER_KEY_PROP = "DocuFormSync_Picker_DevKey";
-
-function getPickerConfig() {
-  return {
-    appId: PICKER_APP_ID,
-    developerKey: PropertiesService.getScriptProperties().getProperty(PICKER_KEY_PROP) || "",
-    token: ScriptApp.getOAuthToken()
-  };
-}
-
-function SET_PICKER_KEY() {
-  try {
-    var ui = FormApp.getUi();
-    var res = ui.prompt(
-      "🔑 Set Picker API Key",
-      "Paste your Browser API key (starts with AIza...):",
-      ui.ButtonSet.OK_CANCEL
-    );
-    if (res.getSelectedButton() === ui.Button.OK) {
-      var key = (res.getResponseText() || "").trim();
-      if (key) {
-        PropertiesService.getScriptProperties().setProperty(PICKER_KEY_PROP, key);
-        ui.alert("Saved. The 📂 Browse picker will use this key.");
-      } else {
-        ui.alert("No key entered. Skipped.");
-      }
-    }
-  } catch (e) {
-    Logger.log("[DocuForm Sync] SET_PICKER_KEY error: " + e.toString());
-  }
 }

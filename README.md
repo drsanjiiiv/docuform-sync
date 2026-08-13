@@ -10,7 +10,7 @@ The add-on runs as a clean, card-based sidebar inside your Google Form editor, l
 
 Unlike traditional sync tools, DocuForm Sync gives you complete control straight from the sidebar:
 
-* **4-Step Sync Wizard:** Connect your Form & Sheet → Map columns to questions → Preview the options → Sync instantly or save the configuration.
+* **Simple Question-by-Question Flow:** Each supported question gets a **Populate from range** toggle — a `+` opens a 3-step wizard (Select Sheet → Select Range with live preview → Name range) and **Save & Sync** updates it instantly.
 * **Supported Question Types:**
   * 🎯 **Dropdown** (`ListItem`)
   * 🔘 **Multiple Choice**
@@ -28,26 +28,22 @@ Unlike traditional sync tools, DocuForm Sync gives you complete control straight
 * `Router.js` - RPC layer exposed to the sidebar via `google.script.run`.
 * `BackgroundService.js` - Auto-sync execution and on-form-submit trigger handling.
 * `TriggerService.js` - Time-driven trigger creation and management.
-* `UI_Main.html` - The sidebar dashboard (Wizard / Auto-Sync / History tabs).
+* `UI_Main.html` - The sidebar dashboard (Questions / Auto-repopulate / Sync).
 * `appsscript.json` - Apps Script manifest (runtime + OAuth scopes).
 * `Privacy-Policy.md` - Our data protection compliance standards.
 * `Terms-of-Service.md` - Terms and usage guidelines.
 
 ---
 
-## 📂 Spreadsheet Picker Setup
+## 📂 Choosing a Spreadsheet
 
-The **📂 Browse** button uses the [Google Picker API](https://developers.google.com/drive/picker) with the `drive.file` scope, so users grant access to exactly the sheet they select. Configure your Google Cloud project once:
+The **Select Sheet** step works **out of the box** — no API keys or Cloud setup needed:
 
-1. Create/link a **standard GCP project** (script.google.com → Project Settings → Change project) — note the **project number**.
-2. In the Cloud Console for that project:
-   - Configure the **OAuth consent screen** (External, app name + support email).
-   - Enable the **Google Picker API** and the **Google Drive API**.
-   - Create a **Browser API key** (no referrer restriction).
-3. Set `PICKER_APP_ID` in `Code.gs` to your Cloud project number (a public value, safe to commit).
-4. Run the **🔑 Set Picker Key** item from the add-on menu (or `SET_PICKER_KEY()` in the editor) and paste the API key.
+1. Pick a spreadsheet from your Drive (listed automatically via the add-on's read-only Drive scope), or
+2. Paste a Sheet **link / ID**, or
+3. Use **⚡ Use linked sheet** (the form's response destination).
 
-> 🔐 **Security:** the Browser API key is stored in **Script Properties** — it is never committed to this repository. If a key is ever exposed, delete it and create a new one in the Cloud Console, then update it via the menu item.
+The full picker is handled server-side inside the add-on, so there is nothing for end users (e.g. MSME staff) to configure.
 
 ---
 
