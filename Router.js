@@ -15,6 +15,10 @@ function _wrap(result) {
 
 // ============================ IDENTIFICATION ============================
 
+function getOAuthToken() {
+  return ScriptApp.getOAuthToken();
+}
+
 function getFormTitle(formId) {
   try {
     const id = (formId || "").trim();
@@ -70,32 +74,6 @@ function getSheetNames(sheetId) {
     return { success: true, data: sheets };
   } catch (e) {
     return { success: false, error: "Could not open spreadsheet. Check the ID or permissions. " + e.message };
-  }
-}
-
-function searchSpreadsheets(query, maxResults, token) {
-  try {
-    const max = Math.min(maxResults || 50, 100);
-    let it;
-    if (token) {
-      it = DriveApp.continueFileIterator(token);
-    } else {
-      const q = (query || "").trim();
-      const base = 'mimeType = "application/vnd.google-apps.spreadsheet" and trashed = false';
-      it = DriveApp.searchFiles(q ? 'title contains "' + q.replace(/"/g, '\\"') + '" and ' + base : base);
-    }
-    const out = [];
-    while (it.hasNext() && out.length < max) {
-      const f = it.next();
-      out.push({ id: f.getId(), name: f.getName() });
-    }
-    let nextToken = "";
-    if (out.length === max && it.hasNext()) {
-      try { nextToken = it.getContinuationToken(); } catch (e) {}
-    }
-    return { success: true, data: out, nextToken: nextToken };
-  } catch (e) {
-    return { success: false, error: e.message };
   }
 }
 

@@ -3,6 +3,7 @@
 <head>
   <base target="_top">
   <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+  <script src="https://apis.google.com/js/api.js"></script>
 
   <style>
     :root {
@@ -112,6 +113,19 @@
 
     .picker-btn.applied { background: var(--green); }
     .picker-btn.applied:hover { background: var(--green); }
+
+    .picker-browse {
+      width: 100%; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: var(--primary); color: #fff; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .picker-browse:hover { background: var(--accent); color: var(--primary); }
+    .picker-browse:disabled { opacity: .6; cursor: default; }
+    .picked-sheet {
+      margin-top: 8px; font-size: 12.5px; color: var(--green); font-weight: 500;
+      background: #e6f4ea; border-radius: 8px; padding: 8px 10px; word-break: break-word;
+    }
 
     .picker-list { max-height: 26vh; overflow-y: auto; margin-top: 8px; }
     .sheet-pick {
@@ -233,11 +247,11 @@
     var originalRangeName = '';
     var advanced = { capacityColumn: '', sortOrder: 'none', includeBlank: false, startRow: 1, endRow: 0 };
 
-    var pickerToken = '';
-    var pickerQuery = '';
-    var pickerItems = [];
-    var pickerLoading = false;
-    var pickerTimer = null;
+    var pickerApiLoaded = false;
+    var oAuthToken = '';
+    var pickedSheetName = '';
+    var PICKER_API_KEY = 'AIzaSyA5dnktMJlUP08ZNb35n24Ks0rucRI9zzA';
+    var PICKER_APP_ID = '939872818516';
 
     var SHEET_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="21" height="21" rx="2.5" fill="#fff" stroke="#dadce0"/><g stroke="#34a853" stroke-width="1.2" fill="none"><path d="M5.5 7.5h13M5.5 11h13M5.5 14.5h13M5.5 18h13"/><path d="M9.5 7.5v10.5M13.5 7.5v10.5M17.5 7.5v10.5"/></g></svg>';
 
@@ -270,12 +284,12 @@
           $('qChip').textContent = qTitle ? 'Q: ' + qTitle : 'Setting up question…';
           setStep(1);
           if (sheetId) loadSheetTabs();
-          runPickerSearch(existing ? existing.sheetId : '');
+          initPicker();
         })
         .withFailureHandler(function (err) {
           toast('Error: ' + err.message, 'error');
           setStep(1);
-          runPickerSearch('');
+          initPicker();
         })
         .loadQuestionMappings(currentFormId);
     }
@@ -333,9 +347,8 @@
     function renderStepSheet() {
       $('wizBody').innerHTML =
         '<label class="field-label">1. Choose a spreadsheet</label>' +
-        '<input type="text" id="pickerSearch" placeholder="🔍  Search your spreadsheets…" oninput="onPickerSearchInput()" />' +
-        '<div class="picker-list" id="pickerList"></div>' +
-        '<button class="btn" id="pickerMore" style="display:none;width:100%;margin-top:4px" onclick="pickerLoadMore()">Load more</button>' +
+        '<button class="picker-browse" id="pickerBtn" onclick="launchSheetPicker()">' + SHEET_ICON + ' Browse your Drive</button>' +
+        '<div class="picked-sheet" id="pickedSheetLine" style="' + (pickedSheetName ? '' : 'display:none') + '">✓ ' + escapeHtml(pickedSheetName) + '</div>' +
         '<div class="or-divider">or paste a link / ID</div>' +
         '<div class="sheet-input-row">' +
         '  <input type="text" id="sheetIdInput" value="' + escapeHtml(sheetId) + '" placeholder="Paste Sheet link or ID" oninput="syncApplyLabel()" />' +
@@ -344,64 +357,61 @@
         '<label class="field-label" style="margin-top:12px">2. Sheet Tab</label>' +
         '<select id="sheetTabSelect"></select>';
       syncApplyLabel();
+      var btn = $('pickerBtn');
+      if (btn && (!pickerApiLoaded || !oAuthToken)) { btn.disabled = true; btn.textContent = '⏳ Loading Drive…'; }
     }
 
-    function runPickerSearch(preselectId) {
-      if (pickerLoading) return;
-      pickerLoading = true;
-      $('pickerList').innerHTML = '<div class="empty-state"><div class="big">⏳</div>Loading your sheets…</div>';
-      google.script.run
-        .withSuccessHandler(function (res) {
-          pickerLoading = false;
-          if (!res.success) {
-            $('pickerList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(res.error) + '</div>';
-            return;
-          }
-          pickerItems = pickerItems.concat(res.data || []);
-          renderPickerList();
-          $('pickerMore').style.display = res.nextToken ? 'block' : 'none';
-          pickerToken = res.nextToken || '';
-          if (preselectId && pickerItems.some(function (s) { return s.id === preselectId; })) {
-            onSheetPicked(preselectId);
-          }
-        })
-        .withFailureHandler(function (err) {
-          pickerLoading = false;
-          $('pickerList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(err.message) + '</div>';
-        })
-        .searchSpreadsheets(pickerQuery, 50, pickerToken);
+    function initPicker() {
+      if (typeof gapi === 'undefined') return;
+      gapi.load('picker', {
+        callback: function () {
+          pickerApiLoaded = true;
+          google.script.run.withSuccessHandler(function (token) {
+            oAuthToken = token;
+            var btn = $('pickerBtn');
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = SHEET_ICON + ' Browse your Drive';
+            }
+          }).getOAuthToken();
+        }
+      });
     }
 
-    function onPickerSearchInput() {
-      if (pickerTimer) clearTimeout(pickerTimer);
-      pickerTimer = setTimeout(function () {
-        pickerQuery = $('pickerSearch').value;
-        pickerToken = '';
-        pickerItems = [];
-        runPickerSearch('');
-      }, 350);
-    }
-
-    function pickerLoadMore() { runPickerSearch(''); }
-
-    function renderPickerList() {
-      var list = $('pickerList');
-      if (!pickerItems.length) {
-        list.innerHTML = '<div class="empty-state"><div class="big">🗂️</div>No spreadsheets found.</div>';
+    function launchSheetPicker() {
+      if (!pickerApiLoaded || !oAuthToken) {
+        toast('Please wait, loading Drive components…', 'warning');
         return;
       }
-      list.innerHTML = pickerItems.map(function (s) {
-        return '<button type="button" class="sheet-pick' + (s.id === sheetId ? ' selected' : '') + '" onclick="onSheetPicked(\'' + escapeHtml(s.id) + '\')">' +
-          '<span class="sheet-pick-icon">' + SHEET_ICON + '</span>' +
-          '<span class="sheet-pick-name">' + escapeHtml(s.name) + '</span></button>';
-      }).join('');
+      var view = new google.picker.View(google.picker.ViewId.SPREADSHEETS);
+      new google.picker.PickerBuilder()
+        .addView(view)
+        .setAppId(PICKER_APP_ID)
+        .setDeveloperKey(PICKER_API_KEY)
+        .setOAuthToken(oAuthToken)
+        .setOrigin(google.script.host.origin)
+        .setSize(800, 600)
+        .setTitle('Select Spreadsheet')
+        .setCallback(function (data) {
+          if (data.action === google.picker.Action.PICKED) {
+            var doc = data.docs[0];
+            onSheetPicked(doc.id, doc.name);
+          }
+        })
+        .build()
+        .setVisible(true);
     }
 
-    function onSheetPicked(id) {
+    function onSheetPicked(id, name) {
       sheetId = id;
+      pickedSheetName = name || '';
       var input = $('sheetIdInput');
       if (input) input.value = id;
-      renderPickerList();
+      var line = $('pickedSheetLine');
+      if (line) {
+        line.innerHTML = '✓ ' + escapeHtml(pickedSheetName);
+        line.style.display = pickedSheetName ? 'block' : 'none';
+      }
       loadSheetTabs();
       syncApplyLabel();
     }
@@ -420,8 +430,10 @@
       var id = extractSheetId($('sheetIdInput').value);
       if (!id) { toast('Paste a Sheet ID or link.', 'warning'); return; }
       sheetId = id;
+      pickedSheetName = '';
       $('sheetIdInput').value = id;
-      renderPickerList();
+      var line = $('pickedSheetLine');
+      if (line) { line.style.display = 'none'; }
       var btn = $('applyBtn');
       if (btn) { btn.disabled = true; btn.textContent = 'Applying…'; }
       loadSheetTabs(function (ok) {
