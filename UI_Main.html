@@ -73,6 +73,7 @@
       padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
       cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--muted);
       transition: all 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
     }
     .btn:hover { background: var(--bg); }
     .btn-sm { padding: 6px 10px; font-size: 11.5px; }
@@ -94,7 +95,8 @@
     .plus-btn {
       flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
       border: 1px solid var(--primary); background: var(--primary); color: #fff;
-      font-size: 18px; line-height: 1; cursor: pointer; transition: all 0.2s ease;
+      font-size: 18px; cursor: pointer; transition: all 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1;
     }
     .plus-btn:hover { background: var(--accent); color: var(--primary); border-color: var(--accent); }
     .plus-btn.remove { background: #fff; color: var(--warn); border-color: var(--warn); font-size: 13px; }
@@ -126,6 +128,7 @@
       flex: 1 1 0; min-width: 0; padding: 7px 4px; border-radius: 8px; font-size: 11.5px; font-weight: 600;
       cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--muted);
       transition: all 0.2s ease; white-space: nowrap;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
     }
     .interval-btn:hover { background: var(--accent); color: var(--primary); border-color: var(--accent); }
     .interval-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
@@ -141,6 +144,7 @@
       flex: 1 1 0; min-width: 0; padding: 11px 8px; border-radius: 8px; font-weight: 600; font-size: 13px;
       cursor: pointer; border: none; background: var(--primary); color: #fff; transition: all 0.2s ease;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
     }
     .footer-btn:hover { background: var(--accent); color: var(--primary); }
     .footer-btn:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -160,8 +164,14 @@
       padding: 12px 14px; border-bottom: 1px solid #e8eaed; flex-shrink: 0;
     }
     .modal-head strong { font-size: 14px; color: var(--primary); }
-    .modal-close { border: none; background: transparent; font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    .modal-close { border: none; background: transparent; font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
     .modal-close:hover { background: var(--bg); }
+
+    .hint-warn {
+      font-size: 11px; color: var(--warn); background: var(--warn-bg);
+      padding: 7px 10px; border-radius: 8px; margin-top: 8px; line-height: 1.4; display: none;
+    }
+    .hint-warn a { color: var(--warn); font-weight: 600; text-decoration: none; }
 
     .wiz-steps { display: flex; gap: 4px; padding: 10px 14px 0; flex-shrink: 0; }
     .wiz-step { flex: 1; text-align: center; font-size: 11px; color: var(--faint); font-weight: 500; }
@@ -178,6 +188,7 @@
     .sheet-input-row .picker-btn {
       flex: 0 0 auto; padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
       background: var(--primary); color: #fff; border: none; cursor: pointer; transition: all 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
     }
     .sheet-input-row .picker-btn:hover { background: var(--accent); color: var(--primary); }
 
@@ -218,7 +229,6 @@
 
   <div class="sidebar-header">
     <h2>⚡ DocuForm Sync</h2>
-    <p class="sub" id="formTitleSub">Sync Form questions from a Sheet column</p>
     <p class="privacy">
       🔒 Data stays in your Google Workspace, nothing stored externally.
       <a href="https://apps.pwmai.com/privacy-policy/" target="_blank">Privacy Policy</a>
@@ -346,18 +356,8 @@
     }
 
     function loadAll() {
-      fetchFormTitle();
       loadSettingsTab();
       loadQuestions();
-    }
-
-    function fetchFormTitle() {
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (res.success) $('formTitleSub').textContent = 'Sync ' + res.data;
-        })
-        .withFailureHandler(function () {})
-        .getFormTitle(currentFormId);
     }
 
     // ==========================================
@@ -530,14 +530,26 @@
         '  <input id="modalSheetIdInput" type="text" value="' + escapeHtml(modalSheetId) + '" placeholder="Paste Sheet ID" />' +
         '  <button class="picker-btn" onclick="pickSpreadsheet()">📂 Browse</button>' +
         '</div>' +
-        '<div class="btn-row" style="margin-top:6px">' +
+        '<div class="hint-warn" id="pickerKeyHint">Picking needs a Cloud API key — use the ⚡ DocuForm Sync menu → 🔑 Set Picker Key.</div>' +
+        '<div style="margin-top:6px">' +
         '  <button class="btn btn-sm" onclick="useLinkedSheet()">⚡ Use linked sheet</button>' +
         '</div>' +
         '<label class="field-label" style="margin-top:10px">Sheet Tab</label>' +
         '<select id="modalSheetNameSelect"></select>';
 
+      checkPickerKeyHint();
       loadSheetNamesForModal();
       if (!modalSheetId) useLinkedSheet();
+    }
+
+    function checkPickerKeyHint() {
+      google.script.run
+        .withSuccessHandler(function (cfg) {
+          var hint = $('pickerKeyHint');
+          if (hint) hint.style.display = (!cfg || !cfg.developerKey) ? 'block' : 'none';
+        })
+        .withFailureHandler(function () {})
+        .getPickerConfig();
     }
 
     function useLinkedSheet() {
@@ -579,7 +591,8 @@
       google.script.run
         .withSuccessHandler(function (cfg) {
           if (!cfg || !cfg.appId || !cfg.developerKey) {
-            toast('Picking needs a Cloud API key — use the ⚡ DocuForm Sync menu → 🔑 Set Picker Key.', 'warning');
+            var hint = $('pickerKeyHint');
+            if (hint) hint.style.display = 'block';
             return;
           }
           window.__pickerCfg = cfg;
