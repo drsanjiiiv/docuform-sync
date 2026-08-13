@@ -37,17 +37,17 @@ Unlike traditional sync tools, DocuForm Sync gives you complete control straight
 
 ## 📂 Spreadsheet Picker Setup
 
-The **📂 Browse** button uses the [Google Picker API](https://developers.google.com/drive/picker) with the `drive.file` scope, so users grant access to exactly the sheet they select. To enable it, configure your Google Cloud project and fill in two constants at the top of `Code.gs`:
+The **📂 Browse** button uses the [Google Picker API](https://developers.google.com/drive/picker) with the `drive.file` scope, so users grant access to exactly the sheet they select. Configure your Google Cloud project once:
 
-1. Open the Apps Script project → **Project Settings** → note the **Google Cloud Platform (GCP) Project number**.
+1. Create/link a **standard GCP project** (script.google.com → Project Settings → Change project) — note the **project number**.
 2. In the Cloud Console for that project:
-   - Enable the **Picker API**.
+   - Configure the **OAuth consent screen** (External, app name + support email).
+   - Enable the **Google Picker API** and the **Google Drive API**.
    - Create a **Browser API key** (no referrer restriction).
-3. In `Code.gs`, set:
-   - `PICKER_APP_ID = "<your Cloud project number>"` (e.g. `123456789012`)
-   - `PICKER_DEVELOPER_KEY = "<your Browser API key>"`
+3. Set `PICKER_APP_ID` in `Code.gs` to your Cloud project number (a public value, safe to commit).
+4. Run the **🔑 Set Picker Key** item from the add-on menu (or `SET_PICKER_KEY()` in the editor) and paste the API key.
 
-Until these are set, the Browse button shows a hint and the manual "paste a Sheet ID" / "⚡ Use linked sheet" paths still work.
+> 🔐 **Security:** the Browser API key is stored in **Script Properties** — it is never committed to this repository. If a key is ever exposed, delete it and create a new one in the Cloud Console, then update it via the menu item.
 
 ---
 
