@@ -101,6 +101,15 @@
     .plus-btn.remove { background: #fff; color: var(--warn); border-color: var(--warn); font-size: 13px; }
     .plus-btn.remove:hover { background: var(--warn-bg); }
 
+    .range-btn {
+      flex: 0 0 auto; padding: 6px 10px; border-radius: 8px;
+      border: 1px solid var(--primary); background: var(--primary); color: #fff;
+      font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
+      white-space: nowrap;
+    }
+    .range-btn:hover { background: var(--accent); color: var(--primary); border-color: var(--accent); }
+
     .q-pop-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; }
     .q-pop-row input { width: auto; }
 
@@ -319,7 +328,7 @@
         if (cfg) html += '<div class="q-src">↳ ' + escapeHtml(src) + '</div>';
         else html += '<div class="q-empty-src">Not syncing — pick a range</div>';
         html += '</div>';
-        html += '<button class="plus-btn' + (cfg ? ' remove' : '') + '" title="' + (cfg ? 'Change range' : 'Add range') + '" onclick="' + (cfg ? 'clearMapping(\'' + q.id + '\')' : 'openPickerDialog(\'' + q.id + '\')') + '">' + (cfg ? '✕' : '+') + '</button>';
+        html += '<button class="' + (cfg ? 'range-btn' : 'plus-btn') + '" title="' + (cfg ? 'Apply new range' : 'Add range') + '" onclick="openPickerDialog(\'' + q.id + '\')">' + (cfg ? 'Apply new range' : '+') + '</button>';
         html += '</div>';
       });
 
