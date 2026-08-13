@@ -57,18 +57,42 @@
       border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text);
       outline: none; box-sizing: border-box;
     }
-    select {
-      width: 100%; padding: 10px 30px 10px 12px; border: 1px solid var(--border);
-      border-radius: 8px; font-size: 13px; background-color: var(--surface); color: var(--text);
-      outline: none; box-sizing: border-box;
-      -webkit-appearance: none; -moz-appearance: none; appearance: none;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%235f6368' d='M1.4 0L6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z'/></svg>");
-      background-repeat: no-repeat; background-position: right 12px center;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      transition: border-color 0.2s ease, background-color 0.2s ease;
+    #rangeNameInput {
+      border: none;
+      font-weight: 600;
+      color: #fff;
+      background-color: var(--primary);
+      line-height: 1.4;
+      transition: background-color 0.2s ease, color 0.2s ease;
     }
-    select:hover { border-color: var(--primary); background-color: #f1f3f4; }
-    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15); }
+    #rangeNameInput:hover { background-color: var(--accent); color: var(--primary); }
+    #rangeNameInput::placeholder { color: rgba(255, 255, 255, 0.85); }
+    select {
+      width: 100%;
+      padding: 9px 30px 9px 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      background-color: var(--primary);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%23ffffff' d='M1.4 0L6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      outline: none;
+      line-height: 1.4;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    select:hover {
+      background-color: var(--accent);
+      color: var(--primary);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='%231a73e8' d='M1.4 0L6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z'/></svg>");
+    }
+    select option { color: var(--text); background: #fff; font-weight: 400; }
+    input:focus, select:focus { box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3); }
     .hint { font-size: 11px; color: var(--muted); margin: 4px 0 0 0; }
 
     .btn {
