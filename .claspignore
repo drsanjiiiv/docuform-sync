@@ -1,4 +1,10 @@
 .continue/**
 *.md
+*.txt
 .git/**
 .gitignore
+Logos/**
+client_secret_*.json
+*.png
+*.jpeg
+*.jpg

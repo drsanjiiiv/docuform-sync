@@ -73,7 +73,7 @@ class SyncEngine {
   _readColumn(sheet, columnLetter, startRow, endRow) {
     const colIndex = this._columnLetterToIndex(columnLetter);
     const lastRow = sheet.getLastRow();
-    const start = Math.max(startRow || 1, 1);
+    const start = Math.max(startRow || 1, 2);
     let end = (endRow && endRow > 0) ? endRow : lastRow;
     end = Math.min(end, lastRow);
     if (start > end) return [];
@@ -91,7 +91,7 @@ class SyncEngine {
       return { error: `Sheet "${mapping.sheetName || '(first tab)'}" not found in the target spreadsheet.` };
     }
     const lastRow = sheet.getLastRow();
-    const start = Math.max((mapping.startRow || 1), 1);
+    const start = Math.max((mapping.startRow || 1), 2);
     let end = (mapping.endRow && mapping.endRow > 0) ? mapping.endRow : lastRow;
     end = Math.min(end, lastRow);
     if (start > end) {
@@ -275,6 +275,35 @@ class SyncEngine {
     return null;
   }
 
+  clearQuestionChoices(formId, questionId) {
+    try {
+      const form = this._openForm(formId);
+      if (!form) return { success: false, message: "No active Form found." };
+      const targetItem = this._findItem(form, questionId);
+      if (!targetItem) return { success: false, message: "Question ID not found." };
+      const type = targetItem.getType();
+      switch (type) {
+        case FormApp.ItemType.MULTIPLE_CHOICE:
+          targetItem.asMultipleChoiceItem().setChoiceValues([]);
+          break;
+        case FormApp.ItemType.LIST:
+          targetItem.asListItem().setChoiceValues([]);
+          break;
+        case FormApp.ItemType.CHECKBOX:
+          targetItem.asCheckboxItem().setChoiceValues([]);
+          break;
+        case FormApp.ItemType.GRID:
+          targetItem.asGridItem().setColumns([]);
+          break;
+        default:
+          return { success: false, message: "Unsupported question type for clearing." };
+      }
+      return { success: true, message: "Question choices cleared." };
+    } catch (e) {
+      return { success: false, message: e.message };
+    }
+  }
+
   _toFormValues(choices) {
     return choices.map(c => c === "" ? "\u200B" : c);
   }
@@ -313,7 +342,14 @@ class SyncEngine {
           continue;
         }
         if (prep.choices.length === 0) {
-          results.push({ index: i, status: "skipped", message: "No choices found in the selected column." });
+          const clearRes = this.clearQuestionChoices(formId, mapping.questionId);
+          if (clearRes.success) {
+            results.push({ index: i, status: "ok", message: "No choices found in the selected column — question cleared." });
+            processed++;
+          } else {
+            errors++;
+            results.push({ index: i, status: "error", message: "No choices found and could not clear question: " + clearRes.message });
+          }
           continue;
         }
         cleanedBlanks += prep.blankRemoved || 0;

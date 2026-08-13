@@ -15,8 +15,22 @@ function _wrap(result) {
 
 // ============================ IDENTIFICATION ============================
 
+/**
+ * Fetches the active user's OAuth token to initialize the Google Picker API client-side.
+ * @return {Object} { success: true, token: string } or { success: false, error: string }
+ */
 function getOAuthToken() {
-  return ScriptApp.getOAuthToken();
+  try {
+    return {
+      success: true,
+      token: ScriptApp.getOAuthToken()
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err.toString()
+    };
+  }
 }
 
 function getFormTitle(formId) {
@@ -113,6 +127,15 @@ function populateChoices(formId, questionId, choices) {
   try {
     const engine = new SyncEngine();
     return engine.populateChoices(formId, questionId, choices);
+  } catch (e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function clearQuestionChoices(formId, questionId) {
+  try {
+    const engine = new SyncEngine();
+    return engine.clearQuestionChoices(formId, questionId);
   } catch (e) {
     return { success: false, message: e.message };
   }

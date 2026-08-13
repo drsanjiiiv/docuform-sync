@@ -253,8 +253,6 @@
     var PICKER_API_KEY = 'AIzaSyA5dnktMJlUP08ZNb35n24Ks0rucRI9zzA';
     var PICKER_APP_ID = '939872818516';
 
-    var SHEET_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="21" height="21" rx="2.5" fill="#fff" stroke="#dadce0"/><g stroke="#34a853" stroke-width="1.2" fill="none"><path d="M5.5 7.5h13M5.5 11h13M5.5 14.5h13M5.5 18h13"/><path d="M9.5 7.5v10.5M13.5 7.5v10.5M17.5 7.5v10.5"/></g></svg>';
-
     function $(id) { return document.getElementById(id); }
 
     window.onload = function () { init(); };
@@ -284,12 +282,12 @@
           $('qChip').textContent = qTitle ? 'Q: ' + qTitle : 'Setting up question…';
           setStep(1);
           if (sheetId) loadSheetTabs();
-          initPicker();
+          onApiLoad();
         })
         .withFailureHandler(function (err) {
           toast('Error: ' + err.message, 'error');
           setStep(1);
-          initPicker();
+          onApiLoad();
         })
         .loadQuestionMappings(currentFormId);
     }
@@ -347,7 +345,7 @@
     function renderStepSheet() {
       $('wizBody').innerHTML =
         '<label class="field-label">1. Choose a spreadsheet</label>' +
-        '<button class="picker-browse" id="pickerBtn" onclick="launchSheetPicker()">' + SHEET_ICON + ' Browse your Drive</button>' +
+        '<button type="button" class="btn btn-primary picker-browse" id="pickerBtn" onclick="openGooglePicker()">📂 Browse Google Drive</button>' +
         '<div class="picked-sheet" id="pickedSheetLine" style="' + (pickedSheetName ? '' : 'display:none') + '">✓ ' + escapeHtml(pickedSheetName) + '</div>' +
         '<div class="or-divider">or paste a link / ID</div>' +
         '<div class="sheet-input-row">' +
@@ -358,62 +356,96 @@
         '<select id="sheetTabSelect"></select>';
       syncApplyLabel();
       var btn = $('pickerBtn');
-      if (btn && (!pickerApiLoaded || !oAuthToken)) { btn.disabled = true; btn.textContent = '⏳ Loading Drive…'; }
+      if (btn && (!pickerApiLoaded || !oAuthToken)) { btn.textContent = '⏳ Loading Drive…'; }
     }
 
-    function initPicker() {
-      if (typeof gapi === 'undefined') return;
+    function onApiLoad() {
+      if (typeof gapi === 'undefined') {
+        toast('Google API script is still loading — retrying…', 'warning');
+        setTimeout(onApiLoad, 1500);
+        return;
+      }
       gapi.load('picker', {
         callback: function () {
           pickerApiLoaded = true;
-          google.script.run.withSuccessHandler(function (token) {
-            oAuthToken = token;
-            var btn = $('pickerBtn');
-            if (btn) {
-              btn.disabled = false;
-              btn.innerHTML = SHEET_ICON + ' Browse your Drive';
-            }
-          }).getOAuthToken();
+          fetchOAuthToken();
         }
       });
     }
 
-    function launchSheetPicker() {
-      if (!pickerApiLoaded || !oAuthToken) {
-        toast('Please wait, loading Drive components…', 'warning');
-        return;
-      }
-      var view = new google.picker.View(google.picker.ViewId.SPREADSHEETS);
-      new google.picker.PickerBuilder()
-        .addView(view)
-        .setAppId(PICKER_APP_ID)
-        .setDeveloperKey(PICKER_API_KEY)
-        .setOAuthToken(oAuthToken)
-        .setOrigin(google.script.host.origin)
-        .setSize(800, 600)
-        .setTitle('Select Spreadsheet')
-        .setCallback(function (data) {
-          if (data.action === google.picker.Action.PICKED) {
-            var doc = data.docs[0];
-            onSheetPicked(doc.id, doc.name);
+    function fetchOAuthToken(cb) {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res && res.success && res.token) {
+            oAuthToken = res.token;
+          } else {
+            toast('Drive access failed: ' + (res && res.error ? res.error : 'no token returned'), 'error');
           }
+          var btn = $('pickerBtn');
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '📂 Browse Google Drive';
+          }
+          if (cb) cb(!!oAuthToken);
         })
-        .build()
-        .setVisible(true);
+        .withFailureHandler(function (err) {
+          toast('Error getting Drive access: ' + err.message, 'error');
+          var btn = $('pickerBtn');
+          if (btn) { btn.disabled = false; }
+          if (cb) cb(false);
+        })
+        .getOAuthToken();
     }
 
-    function onSheetPicked(id, name) {
-      sheetId = id;
-      pickedSheetName = name || '';
-      var input = $('sheetIdInput');
-      if (input) input.value = id;
-      var line = $('pickedSheetLine');
-      if (line) {
-        line.innerHTML = '✓ ' + escapeHtml(pickedSheetName);
-        line.style.display = pickedSheetName ? 'block' : 'none';
+    function openGooglePicker() {
+      if (!pickerApiLoaded) {
+        toast('Drive picker is still loading — retrying…', 'warning');
+        onApiLoad();
+        return;
       }
-      loadSheetTabs();
-      syncApplyLabel();
+      if (!oAuthToken) {
+        toast('Fetching Drive access…', 'warning');
+        fetchOAuthToken(function (ok) { if (ok) createPicker(); });
+        return;
+      }
+      createPicker();
+    }
+
+    function createPicker() {
+      try {
+        var view = new google.picker.View(google.picker.ViewId.SPREADSHEETS);
+        new google.picker.PickerBuilder()
+          .addView(view)
+          .setSelectableMimeTypes('application/vnd.google-apps.spreadsheet')
+          .setAppId(PICKER_APP_ID)
+          .setDeveloperKey(PICKER_API_KEY)
+          .setOAuthToken(oAuthToken)
+          .setOrigin(google.script.host.origin || window.location.origin)
+          .setSize(800, 600)
+          .setTitle('Select Spreadsheet')
+          .setCallback(pickerCallback)
+          .build()
+          .setVisible(true);
+      } catch (e) {
+        console.error('DocuForm Sync picker build error:', e);
+        toast('Picker failed to open: ' + e.message + ' — check the browser API key / Picker API is enabled.', 'error');
+      }
+    }
+
+    function pickerCallback(data) {
+      if (data.action === google.picker.Action.PICKED) {
+        var doc = data.docs[0];
+        var fileId = doc[google.picker.Document.ID];
+        var fileName = doc[google.picker.Document.NAME] || '';
+        applyPastedSheet(fileId, fileName);
+      }
+    }
+
+    function clearQuestionFromForm() {
+      if (!currentFormId || !currentQuestionId) return;
+      google.script.run
+        .withFailureHandler(function (err) { toast('Error clearing previous options: ' + err.message, 'error'); })
+        .clearQuestionChoices(currentFormId, currentQuestionId);
     }
 
     function extractSheetId(value) {
@@ -426,16 +458,24 @@
       return v;
     }
 
-    function applyPastedSheet() {
-      var id = extractSheetId($('sheetIdInput').value);
+    function applyPastedSheet(fileId, pickedName) {
+      var id = fileId || extractSheetId($('sheetIdInput').value);
       if (!id) { toast('Paste a Sheet ID or link.', 'warning'); return; }
       sheetId = id;
-      pickedSheetName = '';
+      pickedSheetName = pickedName || '';
       $('sheetIdInput').value = id;
       var line = $('pickedSheetLine');
-      if (line) { line.style.display = 'none'; }
+      if (line) {
+        if (pickedName) {
+          line.innerHTML = '✓ ' + escapeHtml(pickedName);
+          line.style.display = 'block';
+        } else {
+          line.style.display = 'none';
+        }
+      }
       var btn = $('applyBtn');
       if (btn) { btn.disabled = true; btn.textContent = 'Applying…'; }
+      clearQuestionFromForm();
       loadSheetTabs(function (ok) {
         var b = $('applyBtn');
         if (!b) return;
@@ -486,7 +526,7 @@
         '<div class="sheet-line">Sheet: ' + escapeHtml(sheetName) + '</div>' +
         savedRangesHtml() +
         '<label class="field-label">Column</label>' +
-        '<select id="columnSelect" onchange="onColumnChange()"></select>' +
+        '<select id="columnSelect" onchange="onColumnChange(true)"></select>' +
         '<p class="hint-tip">*Column must have a header in row 1.</p>' +
         '<div style="margin-top:12px"><label class="field-label">Preview of range data</label>' +
         '<div class="preview-box" id="previewBox"><div class="ph">Select a column to preview.</div></div></div>';
@@ -518,6 +558,7 @@
         startRow: r.startRow || 1,
         endRow: r.endRow || 0
       };
+      clearQuestionFromForm();
       renderStepRange();
     }
 
@@ -539,9 +580,10 @@
         .getSheetHeaders(sheetId, sheetName);
     }
 
-    function onColumnChange() {
+    function onColumnChange(fromUser) {
       column = $('columnSelect').value;
       if (!column) return;
+      if (fromUser) clearQuestionFromForm();
       google.script.run
         .withSuccessHandler(function (res) {
           preview = res.success ? res.data : [];

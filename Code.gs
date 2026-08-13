@@ -19,14 +19,14 @@ function onOpen(e) {
       ui.createAddonMenu()
         .addItem("⚡ Open DocuForm Sync", "INITIALIZE_ADDON_SIDEBAR")
         .addSeparator()
-        .addItem("❓ Help", "showHelp")
+        .addItem("📖 Getting Started", "showHelp")
         .addToUi();
     } catch (err) {
       // Not yet installed as an add-on (bound-script testing).
       ui.createMenu("⚡ DocuForm Sync")
         .addItem("Open DocuForm Sync", "INITIALIZE_ADDON_SIDEBAR")
         .addSeparator()
-        .addItem("Help", "showHelp")
+        .addItem("📖 Getting Started", "showHelp")
         .addToUi();
     }
   } catch (err) {

@@ -5,6 +5,9 @@ node_modules/
 .clasp.json
 .clasprc.json
 
+# OAuth client secrets - never commit
+client_secret_*.json
+
 # AI coding session data
 .continue/
 
