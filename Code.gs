@@ -130,7 +130,7 @@ function getAllFormConfigs() {
  *   - PICKER_APP_ID:        the Cloud project number (e.g. 123456789012)
  *   - PICKER_DEVELOPER_KEY: a Browser API key (no referrer restriction)
  */
-var PICKER_APP_ID = "";
+var PICKER_APP_ID = "939872818516";
 var PICKER_DEVELOPER_KEY = "";
 
 function getPickerConfig() {
