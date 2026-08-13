@@ -15,11 +15,20 @@ var OLD_CFG_PREFIX = "DocuFormSync_Mappings_";
 function onOpen(e) {
   try {
     var ui = FormApp.getUi();
-    ui.createAddonMenu()
-      .addItem("⚡ Open DocuForm Sync", "INITIALIZE_ADDON_SIDEBAR")
-      .addSeparator()
-      .addItem("❓ Help", "showHelp")
-      .addToUi();
+    try {
+      ui.createAddonMenu()
+        .addItem("⚡ Open DocuForm Sync", "INITIALIZE_ADDON_SIDEBAR")
+        .addSeparator()
+        .addItem("❓ Help", "showHelp")
+        .addToUi();
+    } catch (err) {
+      // Not yet installed as an add-on (bound-script testing).
+      ui.createMenu("⚡ DocuForm Sync")
+        .addItem("Open DocuForm Sync", "INITIALIZE_ADDON_SIDEBAR")
+        .addSeparator()
+        .addItem("Help", "showHelp")
+        .addToUi();
+    }
   } catch (err) {
     Logger.log("[DocuForm Sync] onOpen error: " + err.toString());
   }
