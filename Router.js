@@ -201,21 +201,45 @@ function previewColumn(sheetId, sheetName, columnLetter) {
     const sheet = sheetName ? ss.getSheetByName(sheetName) : ss.getSheets()[0];
     if (!sheet) return { success: false, error: 'Sheet not found.' };
     const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return { success: true, data: [], stats: { blanksRemoved: 0, duplicatesRemoved: 0 } };
+    if (lastRow < 2) {
+      return { success: true, data: [], stats: { blanksRemoved: 0, duplicatesRemoved: 0 }, problemRows: { blanks: [], duplicates: [] } };
+    }
     const raw = sheet.getRange(2, colIndex, lastRow - 1, 1).getValues().flat();
+    let lastDataIdx = -1;
+    for (let i = 0; i < raw.length; i++) {
+      if (String(raw[i] == null ? '' : raw[i]).trim() !== '') lastDataIdx = i;
+    }
     const seen = {};
+    const firstRowOf = {};
     const values = [];
+    const blankRows = [];
+    const duplicateRows = [];
     let blanks = 0;
     let dups = 0;
     for (let i = 0; i < raw.length; i++) {
+      const row = 2 + i;
       const v = String(raw[i] == null ? '' : raw[i]).trim();
-      if (v === '') { blanks++; continue; }
+      if (v === '') {
+        blanks++;
+        if (i < lastDataIdx) blankRows.push({ row: row, value: '' });
+        continue;
+      }
       const key = v.toLowerCase();
-      if (seen[key]) { dups++; continue; }
+      if (seen[key]) {
+        dups++;
+        duplicateRows.push({ row: row, value: v, duplicateOfRow: firstRowOf[key] });
+        continue;
+      }
       seen[key] = true;
+      firstRowOf[key] = row;
       values.push(v);
     }
-    return { success: true, data: values, stats: { blanksRemoved: blanks, duplicatesRemoved: dups } };
+    return {
+      success: true,
+      data: values,
+      stats: { blanksRemoved: blanks, duplicatesRemoved: dups },
+      problemRows: { blanks: blankRows, duplicates: duplicateRows }
+    };
   } catch (e) {
     return { success: false, error: e.message };
   }

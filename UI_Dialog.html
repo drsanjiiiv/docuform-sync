@@ -152,6 +152,14 @@
     .preview-item:last-child { border-bottom: none; }
     .preview-item.blank { color: var(--faint); font-style: italic; }
 
+    .clean-report {
+      font-size: 11px; color: var(--warn); background: var(--warn-bg);
+      border: 1px solid #f5c6c4; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
+      word-break: break-word;
+    }
+    .clean-report ul { margin: 4px 0 0 18px; padding: 0; }
+    .clean-report li { margin: 1px 0; }
+
     .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
     .adv-grid label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
     .adv-chk { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 8px; }
@@ -220,6 +228,7 @@
     var column = '';
     var headers = [];
     var preview = [];
+    var cleanReport = null;
     var rangeName = '';
     var originalRangeName = '';
     var advanced = { capacityColumn: '', sortOrder: 'none', includeBlank: false, startRow: 1, endRow: 0 };
@@ -524,9 +533,10 @@
       google.script.run
         .withSuccessHandler(function (res) {
           preview = res.success ? res.data : [];
+          cleanReport = res.problemRows || null;
           renderPreviewBox();
           if (res.stats && (res.stats.blanksRemoved || res.stats.duplicatesRemoved)) {
-            toast('Cleaned ' + res.stats.blanksRemoved + ' blank + ' + res.stats.duplicatesRemoved + ' duplicate row(s). Only unique values are synced.', 'warning');
+            toast('Cleaned ' + res.stats.blanksRemoved + ' blank + ' + res.stats.duplicatesRemoved + ' duplicate row(s). Details below.', 'warning');
           }
         })
         .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
@@ -534,15 +544,28 @@
     }
 
     function renderPreviewBox() {
-      var box = $('previewBox');
+      var box = $('previewBox') || $('previewBox2');
       if (!box) return;
-      if (preview.length === 0) { box.innerHTML = '<div class="ph">No data below the header.</div>'; return; }
-      var html = '<div class="ph">' + escapeHtml(sheetName) + '</div>';
+      var html = cleanReportHtml();
+      if (preview.length === 0) { box.innerHTML = html + '<div class="ph">No data below the header.</div>'; return; }
+      html += '<div class="ph">' + escapeHtml(sheetName) + '</div>';
       preview.slice(0, 30).forEach(function (v) {
         html += '<div class="preview-item">' + escapeHtml(v) + '</div>';
       });
       if (preview.length > 30) html += '<div class="preview-item blank">+' + (preview.length - 30) + ' more…</div>';
       box.innerHTML = html;
+    }
+
+    function cleanReportHtml() {
+      if (!cleanReport) return '';
+      var b = cleanReport.blanks || [];
+      var d = cleanReport.duplicates || [];
+      if (b.length === 0 && d.length === 0) return '';
+      var items = [];
+      b.forEach(function (r) { items.push('Row ' + r.row + ' is blank'); });
+      d.forEach(function (r) { items.push('Row ' + r.row + " '" + r.value + "' is a duplicate (first seen at row " + r.duplicateOfRow + ')'); });
+      return '<div class="clean-report">Removed ' + b.length + ' blank + ' + d.length + ' duplicate row(s):<ul>' +
+        items.map(function (x) { return '<li>' + escapeHtml(x) + '</li>'; }).join('') + '</ul></div>';
     }
 
     // ============ STEP 3 : NAME + SYNC ============

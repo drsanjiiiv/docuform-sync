@@ -95,7 +95,7 @@ class SyncEngine {
     let end = (mapping.endRow && mapping.endRow > 0) ? mapping.endRow : lastRow;
     end = Math.min(end, lastRow);
     if (start > end) {
-      return { choices: [], removedChoices: 0, totalRows: 0, rawCount: 0 };
+      return { choices: [], removedChoices: 0, blankRemoved: 0, duplicateRemoved: 0, totalRows: 0, rawCount: 0, problemRows: { blanks: [], duplicates: [] } };
     }
     const totalRows = end - start + 1;
     const rawChoices = this._readColumn(sheet, mapping.column, start, end);
@@ -108,15 +108,26 @@ class SyncEngine {
       rawSort = this._readColumn(sheet, mapping.sortColumn, start, end);
     }
 
+    let lastDataIdx = -1;
+    for (let i = 0; i < rawChoices.length; i++) {
+      const t = String(rawChoices[i] == null ? "" : rawChoices[i]).trim();
+      if (t !== "") lastDataIdx = i;
+    }
+
     const pairs = [];
     let removedChoices = 0;
     let blankRemoved = 0;
     let duplicateRemoved = 0;
+    const blankRows = [];
+    const duplicateRows = [];
     const seen = {};
+    const firstRowOf = {};
     for (let i = 0; i < rawChoices.length; i++) {
+      const row = start + i;
       const v = String(rawChoices[i] == null ? "" : rawChoices[i]).trim();
       if (v === "") {
         blankRemoved++;
+        if (i < lastDataIdx) blankRows.push({ row: row, value: "" });
         continue;
       }
       if (rawCaps) {
@@ -129,9 +140,11 @@ class SyncEngine {
       const key = v.toLowerCase();
       if (seen[key]) {
         duplicateRemoved++;
+        duplicateRows.push({ row: row, value: v, duplicateOfRow: firstRowOf[key] });
         continue;
       }
       seen[key] = true;
+      firstRowOf[key] = row;
       let sortKey = v;
       if (rawSort) {
         sortKey = String(rawSort[i] == null ? "" : rawSort[i]).trim();
@@ -154,7 +167,8 @@ class SyncEngine {
       blankRemoved,
       duplicateRemoved,
       totalRows,
-      rawCount: pairs.length
+      rawCount: pairs.length,
+      problemRows: { blanks: blankRows, duplicates: duplicateRows }
     };
   }
 
@@ -311,7 +325,7 @@ class SyncEngine {
           if (prep.blankRemoved || prep.duplicateRemoved) {
             note += " (removed " + (prep.blankRemoved || 0) + " blank, " + (prep.duplicateRemoved || 0) + " duplicate)";
           }
-          results.push({ index: i, status: "ok", message: note });
+          results.push({ index: i, status: "ok", message: note, problemRows: prep.problemRows });
         } else {
           errors++;
           results.push({ index: i, status: "failed", message: popResult.message });
@@ -345,7 +359,8 @@ class SyncEngine {
           blankIncluded: prep.choices.length > 0 && prep.choices[0] === "",
           removedChoices: prep.removedChoices,
           blankRemoved: prep.blankRemoved,
-          duplicateRemoved: prep.duplicateRemoved
+          duplicateRemoved: prep.duplicateRemoved,
+          problemRows: prep.problemRows
         }
       };
     } catch (e) {
