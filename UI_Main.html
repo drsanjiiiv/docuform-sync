@@ -148,77 +148,6 @@
     .footer-btn:hover { background: var(--accent); color: var(--primary); }
     .footer-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-    /* ===== MODAL ===== */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(32, 33, 36, 0.45); z-index: 1000;
-      display: flex; align-items: center; justify-content: center; padding: 16px;
-    }
-    .modal {
-      background: #fff; border-radius: 12px; width: 100%; max-height: 92%;
-      display: flex; flex-direction: column; overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-    }
-    .modal-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px; border-bottom: 1px solid #e8eaed; flex-shrink: 0;
-    }
-    .modal-head strong { font-size: 14px; color: var(--primary); }
-    .modal-close { border: none; background: transparent; font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-    .modal-close:hover { background: var(--bg); }
-
-    .wiz-steps { display: flex; gap: 4px; padding: 10px 14px 0; flex-shrink: 0; }
-    .wiz-step { flex: 1; text-align: center; font-size: 11px; color: var(--faint); font-weight: 500; }
-    .wiz-step .dot { height: 4px; border-radius: 2px; background: #e8eaed; margin-bottom: 4px; }
-    .wiz-step.active { color: var(--primary); }
-    .wiz-step.active .dot { background: var(--primary); }
-    .wiz-step.done { color: var(--green); }
-    .wiz-step.done .dot { background: var(--green); }
-
-    .wiz-body { padding: 14px; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
-    .wiz-body .sheet-line { font-size: 13px; font-weight: 500; margin-bottom: 10px; }
-    .sheet-input-row { display: flex; gap: 6px; }
-    .sheet-input-row input { flex: 1; min-width: 0; }
-    .sheet-input-row .picker-btn {
-      flex: 0 0 auto; padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
-      background: var(--primary); color: #fff; border: none; cursor: pointer; transition: all 0.2s ease;
-      display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
-    }
-    .sheet-input-row .picker-btn:hover { background: var(--accent); color: var(--primary); }
-
-    .btn.primary { background: var(--primary); color: #fff; border: none; }
-    .btn.primary:hover { background: var(--accent); color: var(--primary); }
-
-    .picker-search { margin-bottom: 8px; }
-    .picker-list { max-height: 40vh; overflow-y: auto; }
-    .sheet-pick {
-      display: flex; align-items: center; gap: 8px; width: 100%;
-      padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
-      background: var(--surface); cursor: pointer; margin-bottom: 6px; text-align: left;
-      transition: all 0.2s ease;
-    }
-    .sheet-pick:hover { background: var(--accent); border-color: var(--accent); }
-    .sheet-pick-icon { font-size: 15px; flex-shrink: 0; }
-    .sheet-pick-name { font-size: 12.5px; color: var(--text); font-weight: 500; word-break: break-word; }
-
-    .preview-box {
-      border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
-      max-height: 180px; overflow-y: auto; padding: 8px;
-    }
-    .preview-box .ph { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
-    .preview-item { font-size: 12px; padding: 2px 0; border-bottom: 1px dashed #e8eaed; }
-    .preview-item:last-child { border-bottom: none; }
-    .preview-item.blank { color: var(--faint); font-style: italic; }
-
-    .wiz-nav { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid #e8eaed; flex-shrink: 0; }
-    .wiz-nav .ghost { flex: 0 1 auto; }
-    .wiz-nav .primary { flex: 1 1 auto; }
-
-    details.advanced { margin-top: 10px; }
-    details.advanced summary { font-size: 11.5px; color: var(--muted); cursor: pointer; }
-    .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-    .adv-grid label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
-    .adv-chk { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 8px; }
-
     .toast {
       position: fixed; bottom: 72px; right: 12px; left: 12px; padding: 10px 14px;
       border-radius: 8px; font-size: 12px; font-weight: 500; z-index: 2000;
@@ -297,44 +226,6 @@
     <button class="footer-btn" id="syncAllBtn" onclick="syncAllQuestions()">⚡ Sync All</button>
   </div>
 
-  <!-- ===== MODAL : PICK RANGE ===== -->
-  <div id="pickerModal" class="modal-overlay" style="display:none">
-    <div class="modal">
-      <div class="modal-head">
-        <strong>DocuForm Sync</strong>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-
-      <div class="wiz-steps">
-        <div class="wiz-step" id="wizStep1"><div class="dot"></div>Select Sheet</div>
-        <div class="wiz-step" id="wizStep2"><div class="dot"></div>Select Range</div>
-        <div class="wiz-step" id="wizStep3"><div class="dot"></div>Name range</div>
-      </div>
-
-      <div class="wiz-body scrollbar-thin" id="wizBody"></div>
-
-      <div class="wiz-nav">
-        <button class="btn ghost" id="modalBackBtn" onclick="modalBack()">← Back</button>
-        <button class="btn primary" id="modalNextBtn" onclick="modalNext()">Next →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== SHEET PICKER DIALOG ===== -->
-  <div id="sheetPicker" class="modal-overlay" style="display:none">
-    <div class="modal" style="max-height:88%">
-      <div class="modal-head">
-        <strong>Choose a spreadsheet</strong>
-        <button class="modal-close" onclick="closeSheetPicker()">✕</button>
-      </div>
-      <div class="wiz-body scrollbar-thin" style="padding-top:12px">
-        <input class="picker-search" id="sheetPickerSearch" type="text" placeholder="🔍  Search your spreadsheets…" oninput="onPickerSearchInput()" />
-        <div class="picker-list" id="sheetPickerList"></div>
-        <button class="btn" id="sheetPickerMore" style="display:none;margin-top:8px;width:100%" onclick="pickerLoadMore()">Load more</button>
-      </div>
-    </div>
-  </div>
-
   <div id="toastBox" class="toast"></div>
 
   <script>
@@ -345,17 +236,7 @@
     var formQuestions = [];
     var qConfigs = {};
     var namedRanges = {};
-
-    var modalOpen = false;
-    var modalQid = null;
-    var modalStep = 1;
-    var modalSheetId = '';
-    var modalSheetName = '';
-    var modalColumn = '';
-    var modalHeaders = [];
-    var modalPreview = [];
-    var modalRangeName = '';
-    var modalAdvanced = { capacityColumn: '', sortOrder: 'none', includeBlank: false, startRow: 1, endRow: 0 };
+    var lastVersion = -1;
 
     function $(id) { return document.getElementById(id); }
 
@@ -381,6 +262,7 @@
     function loadAll() {
       loadSettingsTab();
       loadQuestions();
+      startVersionPolling();
     }
 
     // ==========================================
@@ -437,7 +319,7 @@
         if (cfg) html += '<div class="q-src">↳ ' + escapeHtml(src) + '</div>';
         else html += '<div class="q-empty-src">Not syncing — pick a range</div>';
         html += '</div>';
-        html += '<button class="plus-btn' + (cfg ? ' remove' : '') + '" title="' + (cfg ? 'Change range' : 'Add range') + '" onclick="' + (cfg ? 'clearMapping(\'' + q.id + '\')' : 'openModal(\'' + q.id + '\')') + '">' + (cfg ? '✕' : '+') + '</button>';
+        html += '<button class="plus-btn' + (cfg ? ' remove' : '') + '" title="' + (cfg ? 'Change range' : 'Add range') + '" onclick="' + (cfg ? 'clearMapping(\'' + q.id + '\')' : 'openPickerDialog(\'' + q.id + '\')') + '">' + (cfg ? '✕' : '+') + '</button>';
         html += '</div>';
       });
 
@@ -454,7 +336,7 @@
 
     function togglePopulate(questionId, checked) {
       if (checked) {
-        openModal(questionId);
+        openPickerDialog(questionId);
       } else {
         clearMapping(questionId);
       }
@@ -471,385 +353,37 @@
     }
 
     // ==========================================
-    // MODAL
+    // PICKER DIALOG
     // ==========================================
-    function openModal(questionId) {
-      modalQid = questionId;
-      var existing = qConfigs[questionId] || null;
-      modalSheetId = existing ? existing.sheetId : '';
-      modalSheetName = existing ? (existing.sheetName || '') : '';
-      modalColumn = existing ? (existing.column || '') : '';
-      modalRangeName = existing ? (existing.rangeName || '') : '';
-      modalAdvanced = {
-        capacityColumn: existing ? (existing.capacityColumn || '') : '',
-        sortOrder: existing ? (existing.sortOrder || 'none') : 'none',
-        includeBlank: existing ? !!existing.includeBlank : false,
-        startRow: existing ? (existing.startRow || 1) : 1,
-        endRow: existing ? (existing.endRow || 0) : 0
-      };
-      modalOpen = true;
-      $('pickerModal').style.display = 'flex';
-      setModalStep(1);
-    }
-
-    function closeModal() {
-      modalOpen = false;
-      $('pickerModal').style.display = 'none';
-    }
-
-    function setModalStep(step) {
-      modalStep = step;
-      for (var i = 1; i <= 3; i++) {
-        var el = $('wizStep' + i);
-        el.className = 'wiz-step';
-        if (i < step) el.classList.add('done');
-        if (i === step) el.classList.add('active');
-      }
-      var backBtn = $('modalBackBtn');
-      var nextBtn = $('modalNextBtn');
-      if (step === 1) {
-        backBtn.style.visibility = 'hidden';
-        nextBtn.textContent = 'Next →';
-        nextBtn.onclick = modalNext;
-      } else {
-        backBtn.style.visibility = 'visible';
-        backBtn.onclick = modalBack;
-      }
-      if (step === 2) { nextBtn.textContent = 'Next →'; nextBtn.onclick = modalNext; }
-      if (step === 3) { nextBtn.textContent = 'Save & Sync'; nextBtn.onclick = saveAndSync; }
-      renderStep(step);
-    }
-
-    function modalBack() {
-      if (modalStep <= 1) { closeModal(); return; }
-      setModalStep(modalStep - 1);
-    }
-
-    function modalNext() {
-      if (modalStep === 1) {
-        modalSheetId = $('modalSheetIdInput').value.trim();
-        modalSheetName = $('modalSheetNameSelect').value;
-        if (!modalSheetId) { toast('Pick or paste a Spreadsheet ID.', 'warning'); return; }
-        if (!modalSheetName) { toast('Select a sheet tab.', 'warning'); return; }
-        setModalStep(2);
-      } else if (modalStep === 2) {
-        modalColumn = $('modalColumnSelect').value;
-        if (!modalColumn) { toast('Select a column.', 'warning'); return; }
-        setModalStep(3);
-      }
-    }
-
-    // --- step 1 : select sheet ---
-    function renderStep(step) {
-      if (step === 1) renderStepSheet();
-      else if (step === 2) renderStepRange();
-      else if (step === 3) renderStepName();
-    }
-
-    function renderStepSheet() {
-      $('wizBody').innerHTML =
-        '<label class="field-label">Spreadsheet</label>' +
-        '<div class="sheet-input-row">' +
-        '  <input id="modalSheetIdInput" type="text" value="' + escapeHtml(modalSheetId) + '" placeholder="Paste Sheet link or ID" />' +
-        '  <button class="picker-btn" onclick="applyPastedSheet()">Apply</button>' +
-        '</div>' +
-        '<div style="display:flex;gap:6px;margin-top:8px">' +
-        '  <button class="btn btn-sm" style="flex:1" onclick="openSheetPicker()">📂 Browse</button>' +
-        '  <button class="btn btn-sm" style="flex:1" onclick="useLinkedSheet()">⚡ Linked sheet</button>' +
-        '</div>' +
-        '<label class="field-label" style="margin-top:10px">Sheet Tab</label>' +
-        '<select id="modalSheetNameSelect"></select>';
-
-      loadSheetNamesForModal();
-      if (!modalSheetId) useLinkedSheet();
-    }
-
-    function extractSheetId(value) {
-      var v = (value || '').trim();
-      if (!v) return '';
-      if (/[?/]/.test(v)) {
-        var m = v.match(/[a-zA-Z0-9_-]{25,}/);
-        if (m) return m[0];
-      }
-      return v;
-    }
-
-    function applyPastedSheet() {
-      var id = extractSheetId($('modalSheetIdInput').value);
-      if (!id) { toast('Paste a Sheet ID or link.', 'warning'); return; }
-      modalSheetId = id;
-      $('modalSheetIdInput').value = id;
-      loadSheetNamesForModal();
-    }
-
-    // --- spreadsheet picker dialog ---
-    var pickerToken = '';
-    var pickerQuery = '';
-    var pickerItems = [];
-    var pickerLoading = false;
-    var pickerSearchTimer = null;
-
-    function openSheetPicker() {
-      $('sheetPicker').style.display = 'flex';
-      pickerToken = '';
-      pickerQuery = '';
-      pickerItems = [];
-      $('sheetPickerSearch').value = '';
-      $('sheetPickerMore').style.display = 'none';
-      runPickerSearch();
-    }
-
-    function closeSheetPicker() {
-      $('sheetPicker').style.display = 'none';
-    }
-
-    function onPickerSearchInput() {
-      if (pickerSearchTimer) clearTimeout(pickerSearchTimer);
-      pickerSearchTimer = setTimeout(function () {
-        pickerQuery = $('sheetPickerSearch').value;
-        pickerToken = '';
-        pickerItems = [];
-        runPickerSearch();
-      }, 350);
-    }
-
-    function runPickerSearch() {
-      if (pickerLoading) return;
-      pickerLoading = true;
-      $('sheetPickerList').innerHTML = '<div class="empty-state"><div class="big">⏳</div>Loading…</div>';
+    function openPickerDialog(questionId) {
+      if (!currentFormId) return;
       google.script.run
-        .withSuccessHandler(function (res) {
-          pickerLoading = false;
-          if (!res.success) {
-            $('sheetPickerList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(res.error) + '</div>';
-            return;
-          }
-          pickerItems = pickerItems.concat(res.data || []);
-          renderPickerList();
-          $('sheetPickerMore').style.display = res.nextToken ? 'block' : 'none';
-          pickerToken = res.nextToken || '';
-        })
-        .withFailureHandler(function (err) {
-          pickerLoading = false;
-          $('sheetPickerList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(err.message) + '</div>';
-        })
-        .searchSpreadsheets(pickerQuery, 50, pickerToken);
+        .withSuccessHandler(function () {})
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .OPEN_PICKER_DIALOG(questionId);
     }
 
-    function pickerLoadMore() {
-      runPickerSearch();
+    // ==========================================
+    // SIDEBAR REFRESH (config version polling)
+    // ==========================================
+    function startVersionPolling() {
+      lastVersion = -1;
+      if (window._versionTimer) clearInterval(window._versionTimer);
+      window._versionTimer = setInterval(checkVersion, 2000);
     }
 
-    function renderPickerList() {
-      var list = $('sheetPickerList');
-      if (!pickerItems.length) {
-        list.innerHTML = '<div class="empty-state"><div class="big">🗂️</div>No spreadsheets found.</div>';
-        return;
-      }
-      list.innerHTML = pickerItems.map(function (s) {
-        return '<button type="button" class="sheet-pick" onclick="onSheetPicked(\'' + escapeHtml(s.id) + '\')">' +
-          '<span class="sheet-pick-icon">📊</span>' +
-          '<span class="sheet-pick-name">' + escapeHtml(s.name) + '</span></button>';
-      }).join('');
-    }
-
-    function onSheetPicked(id) {
-      modalSheetId = id;
-      $('modalSheetIdInput').value = id;
-      closeSheetPicker();
-      toast('Sheet selected.', 'success');
-      loadSheetNamesForModal();
-    }
-
-    function useLinkedSheet() {
+    function checkVersion() {
       google.script.run
-        .withSuccessHandler(function (res) {
-          if (res.success) {
-            modalSheetId = res.data;
-            $('modalSheetIdInput').value = res.data;
-            loadSheetNamesForModal();
-          } else {
-            toast(res.error, 'warning');
+        .withSuccessHandler(function (v) {
+          if (lastVersion === -1) { lastVersion = v; return; }
+          if (v !== lastVersion) {
+            lastVersion = v;
+            loadQuestions();
+            loadSettingsTab();
           }
         })
-        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
-        .getLinkedSpreadsheet(currentFormId);
-    }
-
-    function loadSheetNamesForModal() {
-      var id = $('modalSheetIdInput').value.trim();
-      if (!id) return;
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (res.success && res.data.length) {
-            var sel = $('modalSheetNameSelect');
-            var opts = '<option value="">-- Select Sheet --</option>';
-            res.data.forEach(function (s) {
-              opts += '<option value="' + escapeHtml(s) + '"' + (s === modalSheetName ? ' selected' : '') + '>' + escapeHtml(s) + '</option>';
-            });
-            sel.innerHTML = opts;
-          } else {
-            toast(res.error || 'No sheet tabs found.', 'warning');
-          }
-        })
-        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
-        .getSheetNames(id);
-    }
-
-    // --- step 2 : select range ---
-    function renderStepRange() {
-      $('wizBody').innerHTML =
-        '<div class="sheet-line">Sheet: ' + escapeHtml(modalSheetName) + '</div>' +
-        savedRangesHtml() +
-        '<label class="field-label">Column</label>' +
-        '<select id="modalColumnSelect" onchange="onColumnChange()"></select>' +
-        '<p class="hint">*Column must have a header in row 1.</p>' +
-        '<div style="margin-top:10px"><label class="field-label">Preview of range data</label>' +
-        '<div class="preview-box" id="modalPreviewBox"><div class="ph">Select a column to preview.</div></div></div>';
-      loadHeadersForModal();
-    }
-
-    function savedRangesHtml() {
-      var keys = Object.keys(namedRanges);
-      if (keys.length === 0) return '';
-      var opts = '<option value="">-- Reuse a saved range --</option>';
-      keys.forEach(function (k) { opts += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; });
-      return '<label class="field-label">Saved ranges</label>' +
-        '<select id="modalSavedRange" onchange="onSavedRangePick(this.value)">' + opts + '</select>' +
-        '<div style="height:8px"></div>';
-    }
-
-    function onSavedRangePick(name) {
-      if (!name) return;
-      var r = namedRanges[name];
-      if (!r) return;
-      modalSheetId = r.sheetId;
-      modalSheetName = r.sheetName || '';
-      modalColumn = r.column || '';
-      modalRangeName = name;
-      modalAdvanced = {
-        capacityColumn: r.capacityColumn || '',
-        sortOrder: r.sortOrder || 'none',
-        includeBlank: !!r.includeBlank,
-        startRow: r.startRow || 1,
-        endRow: r.endRow || 0
-      };
-      renderStepRange();
-    }
-
-    function loadHeadersForModal() {
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (!res.success) { toast(res.error, 'error'); return; }
-          modalHeaders = res.data || [];
-          var sel = $('modalColumnSelect');
-          var opts = '<option value="">-- Select Column --</option>';
-          modalHeaders.forEach(function (h, idx) {
-            if (h === '') return;
-            opts += '<option value="' + getDefaultColumn(idx) + '"' + (getDefaultColumn(idx) === modalColumn ? ' selected' : '') + '>' + escapeHtml(h) + '</option>';
-          });
-          sel.innerHTML = opts;
-          if (modalColumn) onColumnChange();
-        })
-        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
-        .getSheetHeaders(modalSheetId, modalSheetName);
-    }
-
-    function onColumnChange() {
-      modalColumn = $('modalColumnSelect').value;
-      if (!modalColumn) return;
-      google.script.run
-        .withSuccessHandler(function (res) {
-          modalPreview = res.success ? res.data : [];
-          renderPreviewBox();
-        })
-        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
-        .previewColumn(modalSheetId, modalSheetName, modalColumn);
-    }
-
-    function renderPreviewBox() {
-      var box = $('modalPreviewBox') || $('modalPreviewBox2');
-      if (!box) return;
-      if (modalPreview.length === 0) {
-        box.innerHTML = '<div class="ph">No data below the header.</div>';
-        return;
-      }
-      var html = '<div class="ph">' + escapeHtml(modalSheetName) + '</div>';
-      modalPreview.slice(0, 30).forEach(function (v) {
-        html += '<div class="preview-item">' + escapeHtml(v) + '</div>';
-      });
-      if (modalPreview.length > 30) html += '<div class="preview-item blank">+' + (modalPreview.length - 30) + ' more…</div>';
-      box.innerHTML = html;
-    }
-
-    // --- step 3 : name range + sync ---
-    function renderStepName() {
-      $('wizBody').innerHTML =
-        '<label class="field-label">Range name</label>' +
-        '<input id="modalRangeNameInput" type="text" value="' + escapeHtml(modalRangeName || currentColumnHeader()) + '" placeholder="e.g. Country List" />' +
-        '<p class="hint">*Give your range a name. It can be re-used in other questions.</p>' +
-        '<details class="advanced"><summary>Advanced options</summary>' +
-        '<div class="adv-grid">' +
-        '  <div><label>Capacity column (opt)</label><input id="advCap" type="text" value="' + escapeHtml(modalAdvanced.capacityColumn) + '" placeholder="A"></div>' +
-        '  <div><label>Sort</label><select id="advSort"><option value="none">None</option><option value="asc">A → Z</option><option value="desc">Z → A</option></select></div>' +
-        '  <div><label>Start row</label><input id="advStart" type="number" value="' + modalAdvanced.startRow + '" min="1"></div>' +
-        '  <div><label>End row (0 = last)</label><input id="advEnd" type="number" value="' + modalAdvanced.endRow + '" min="0"></div>' +
-        '</div>' +
-        '<div class="adv-chk"><input id="advBlank" type="checkbox"' + (modalAdvanced.includeBlank ? ' checked' : '') + '> + blank option</div>' +
-        '</details>' +
-        '<div style="margin-top:10px"><label class="field-label">Preview of range data</label>' +
-        '<div class="preview-box" id="modalPreviewBox2"></div></div>';
-      if (modalAdvanced.sortOrder === 'asc') $('advSort').value = 'asc';
-      else if (modalAdvanced.sortOrder === 'desc') $('advSort').value = 'desc';
-      if (modalPreview.length === 0) onColumnChange();
-      else renderPreviewBox();
-    }
-
-    function currentColumnHeader() {
-      for (var i = 0; i < modalHeaders.length; i++) {
-        if (modalHeaders[i] && getDefaultColumn(i) === modalColumn) return modalHeaders[i];
-      }
-      return '';
-    }
-
-    function saveAndSync() {
-      var rangeName = $('modalRangeNameInput').value.trim();
-      var adv = {
-        capacityColumn: $('advCap').value.trim(),
-        sortOrder: $('advSort').value,
-        includeBlank: $('advBlank').checked,
-        startRow: parseInt($('advStart').value, 10) || 1,
-        endRow: parseInt($('advEnd').value, 10) || 0
-      };
-      var mapping = {
-        questionId: modalQid,
-        sheetId: modalSheetId,
-        sheetName: modalSheetName,
-        column: modalColumn,
-        rangeName: rangeName,
-        capacityColumn: adv.capacityColumn,
-        sortColumn: '',
-        sortOrder: adv.sortOrder,
-        startRow: adv.startRow,
-        endRow: adv.endRow,
-        includeBlank: adv.includeBlank
-      };
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (!res.success) { toast('Save failed: ' + res.error, 'error'); return; }
-          toast('Mapping saved — syncing question…', 'info');
-          closeModal();
-          google.script.run
-            .withSuccessHandler(function (sres) {
-              if (sres.success) toast('✓ Synced ' + sres.processed + ' option(s)!', 'success');
-              else toast('⚠ ' + (sres.message || 'Sync completed with issues.'), 'warning');
-              loadQuestions();
-            })
-            .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
-            .syncQuestion(currentFormId, modalQid);
-        })
-        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
-        .saveQuestionMapping(currentFormId, JSON.stringify(mapping));
+        .withFailureHandler(function () {})
+        .getConfigVersion(currentFormId);
     }
 
     // ==========================================
@@ -938,17 +472,6 @@
       box.style.display = 'block';
       if (toastTimer) clearTimeout(toastTimer);
       toastTimer = setTimeout(function () { box.style.display = 'none'; }, 3500);
-    }
-
-    function getDefaultColumn(index) {
-      var col = '';
-      var n = index + 1;
-      while (n > 0) {
-        var rem = (n - 1) % 26;
-        col = String.fromCharCode(65 + rem) + col;
-        n = Math.floor((n - 1) / 26);
-      }
-      return col;
     }
 
     function escapeHtml(text) {

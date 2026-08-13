@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #174ea6;
+      --accent: #04fbbc;
+      --warn: #c5221f;
+      --warn-bg: #fce8e6;
+      --border: #dadce0;
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --text: #202124;
+      --muted: #5f6368;
+      --faint: #9aa0a6;
+      --green: #137333;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: 'Roboto', sans-serif; background: var(--bg);
+      color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+    }
+
+    .dialog-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; background: #fff; border-bottom: 1px solid #e8eaed; flex-shrink: 0;
+    }
+    .dialog-head h2 { margin: 0; font-size: 16px; color: var(--primary); }
+    .dialog-head .q-chip {
+      font-size: 11px; color: var(--muted); background: var(--bg);
+      padding: 4px 10px; border-radius: 12px; margin-left: 10px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; max-width: 300px;
+    }
+    .modal-close { border: none; background: transparent; font-size: 16px; color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+    .modal-close:hover { background: var(--bg); }
+
+    .wiz-steps { display: flex; gap: 4px; padding: 10px 16px 0; background: #fff; flex-shrink: 0; }
+    .wiz-step { flex: 1; text-align: center; font-size: 11px; color: var(--faint); font-weight: 500; }
+    .wiz-step .dot { height: 4px; border-radius: 2px; background: #e8eaed; margin-bottom: 4px; }
+    .wiz-step.active { color: var(--primary); }
+    .wiz-step.active .dot { background: var(--primary); }
+    .wiz-step.done { color: var(--green); }
+    .wiz-step.done .dot { background: var(--green); }
+
+    .wiz-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 16px; }
+    .sheet-line { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: var(--primary); }
+
+    label.field-label { display: block; font-size: 12px; font-weight: 500; margin: 0 0 4px 0; color: var(--muted); }
+    input[type=text], input[type=number], select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text);
+      outline: none; box-sizing: border-box;
+    }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15); }
+    .hint { font-size: 11px; color: var(--muted); margin: 4px 0 0 0; }
+
+    .btn {
+      padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+      transition: all 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
+    }
+    .btn:hover { background: #e8eaed; }
+    .btn-sm { padding: 6px 10px; font-size: 11.5px; }
+    .btn.primary { background: var(--primary); color: #fff; border: none; }
+    .btn.primary:hover { background: var(--accent); color: var(--primary); }
+
+    .picker-list { max-height: 32vh; overflow-y: auto; margin-top: 8px; }
+    .sheet-pick {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface); cursor: pointer; margin-bottom: 6px; text-align: left;
+      transition: all 0.2s ease;
+    }
+    .sheet-pick:hover { background: var(--accent); border-color: var(--accent); }
+    .sheet-pick.selected { border-color: var(--primary); background: var(--blue-bg); }
+    .sheet-pick-icon { font-size: 15px; flex-shrink: 0; }
+    .sheet-pick-name { font-size: 12.5px; color: var(--text); font-weight: 500; word-break: break-word; }
+
+    .or-divider {
+      display: flex; align-items: center; gap: 10px; margin: 12px 0 10px;
+      font-size: 11px; color: var(--faint);
+    }
+    .or-divider::before, .or-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+    .sheet-input-row { display: flex; gap: 6px; }
+    .sheet-input-row input { flex: 1; min-width: 0; }
+    .sheet-input-row .picker-btn {
+      flex: 0 0 auto; padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      background: var(--primary); color: #fff; border: none; cursor: pointer; transition: all 0.2s ease;
+      display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
+    }
+    .sheet-input-row .picker-btn:hover { background: var(--accent); color: var(--primary); }
+
+    .step-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .step-actions .btn { flex: 1; }
+
+    .preview-box {
+      border: 1px solid var(--border); border-radius: 8px; background: #fff;
+      max-height: 200px; overflow-y: auto; padding: 8px;
+    }
+    .preview-box .ph { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+    .preview-item { font-size: 12px; padding: 2px 0; border-bottom: 1px dashed #e8eaed; }
+    .preview-item:last-child { border-bottom: none; }
+    .preview-item.blank { color: var(--faint); font-style: italic; }
+
+    .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .adv-grid label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .adv-chk { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 8px; }
+    details.advanced { margin-top: 10px; }
+    details.advanced summary { font-size: 11.5px; color: var(--muted); cursor: pointer; }
+
+    .wiz-nav {
+      display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #e8eaed;
+      background: #fff; flex-shrink: 0;
+    }
+    .wiz-nav .ghost { flex: 0 1 auto; }
+    .wiz-nav .primary { flex: 1 1 auto; }
+
+    .empty-state { text-align: center; color: var(--muted); padding: 18px 12px; border: 1px dashed var(--border); border-radius: 10px; background: var(--surface); font-size: 12.5px; }
+    .empty-state .big { font-size: 26px; margin-bottom: 6px; }
+
+    .toast {
+      position: fixed; bottom: 14px; right: 14px; left: 14px; padding: 10px 14px;
+      border-radius: 8px; font-size: 12px; font-weight: 500; z-index: 2000;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15); display: none;
+    }
+    .toast-info { background: #e8f0fe; color: #174ea6; }
+    .toast-success { background: #e6f4ea; color: #137333; }
+    .toast-error { background: #fce8e6; color: #c5221f; }
+    .toast-warning { background: #fef7e0; color: #7a5200; }
+
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #d0d3d6; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <div class="dialog-head">
+    <div style="display:flex;align-items:center;min-width:0">
+      <h2>⚡ DocuForm Sync</h2>
+      <span class="q-chip" id="qChip">Loading…</span>
+    </div>
+    <button class="modal-close" onclick="closeDialog()" title="Close">✕</button>
+  </div>
+
+  <div class="wiz-steps">
+    <div class="wiz-step" id="wizStep1"><div class="dot"></div>Select Sheet</div>
+    <div class="wiz-step" id="wizStep2"><div class="dot"></div>Select Range</div>
+    <div class="wiz-step" id="wizStep3"><div class="dot"></div>Name range</div>
+  </div>
+
+  <div class="wiz-body scrollbar-thin" id="wizBody"></div>
+
+  <div class="wiz-nav">
+    <button class="btn ghost" id="backBtn" onclick="wizBack()">← Back</button>
+    <button class="btn primary" id="nextBtn" onclick="wizNext()">Next →</button>
+  </div>
+
+  <div id="toastBox" class="toast"></div>
+
+  <script>
+    var currentFormId = '<?= formId ?>';
+    var currentQuestionId = '<?= questionId ?>';
+
+    var step = 1;
+    var qTitle = '';
+    var qConfigs = {};
+    var namedRanges = {};
+    var sheetId = '';
+    var sheetName = '';
+    var column = '';
+    var headers = [];
+    var preview = [];
+    var rangeName = '';
+    var advanced = { capacityColumn: '', sortOrder: 'none', includeBlank: false, startRow: 1, endRow: 0 };
+
+    var pickerToken = '';
+    var pickerQuery = '';
+    var pickerItems = [];
+    var pickerLoading = false;
+    var pickerTimer = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    window.onload = function () { init(); };
+
+    function init() {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          var existing = null;
+          if (res && res.success && res.data) {
+            qConfigs = res.data.questions || {};
+            namedRanges = res.data.namedRanges || {};
+            existing = qConfigs[currentQuestionId] || null;
+          }
+          qTitle = existing ? existing.questionTitle || '' : '';
+          sheetId = existing ? (existing.sheetId || '') : '';
+          sheetName = existing ? (existing.sheetName || '') : '';
+          column = existing ? (existing.column || '') : '';
+          rangeName = existing ? (existing.rangeName || '') : '';
+          advanced = {
+            capacityColumn: existing ? (existing.capacityColumn || '') : '',
+            sortOrder: existing ? (existing.sortOrder || 'none') : 'none',
+            includeBlank: existing ? !!existing.includeBlank : false,
+            startRow: existing ? (existing.startRow || 1) : 1,
+            endRow: existing ? (existing.endRow || 0) : 0
+          };
+          $('qChip').textContent = qTitle ? 'Q: ' + qTitle : 'Setting up question…';
+          setStep(1);
+          if (sheetId) loadSheetTabs();
+          runPickerSearch(existing ? existing.sheetId : '');
+        })
+        .withFailureHandler(function (err) {
+          toast('Error: ' + err.message, 'error');
+          setStep(1);
+          runPickerSearch('');
+        })
+        .loadQuestionMappings(currentFormId);
+    }
+
+    // ============ STEP NAV ============
+    function setStep(s) {
+      step = s;
+      for (var i = 1; i <= 3; i++) {
+        var el = $('wizStep' + i);
+        el.className = 'wiz-step';
+        if (i < s) el.classList.add('done');
+        if (i === s) el.classList.add('active');
+      }
+      var back = $('backBtn');
+      var next = $('nextBtn');
+      if (s === 1) {
+        back.style.visibility = 'hidden';
+        next.textContent = 'Next →';
+        next.onclick = wizNext;
+      } else {
+        back.style.visibility = 'visible';
+        back.onclick = wizBack;
+      }
+      if (s === 2) { next.textContent = 'Next →'; next.onclick = wizNext; }
+      if (s === 3) { next.textContent = 'Save & Sync'; next.onclick = saveAndSync; }
+      renderStep(s);
+    }
+
+    function wizBack() {
+      if (step <= 1) { closeDialog(); return; }
+      setStep(step - 1);
+    }
+
+    function wizNext() {
+      if (step === 1) {
+        sheetId = $('sheetIdInput').value.trim();
+        sheetName = $('sheetTabSelect').value;
+        if (!sheetId) { toast('Pick a spreadsheet or paste a Sheet link / ID.', 'warning'); return; }
+        if (!sheetName) { toast('Select a sheet tab.', 'warning'); return; }
+        setStep(2);
+      } else if (step === 2) {
+        column = $('columnSelect').value;
+        if (!column) { toast('Select a column.', 'warning'); return; }
+        setStep(3);
+      }
+    }
+
+    function renderStep(s) {
+      if (s === 1) renderStepSheet();
+      else if (s === 2) renderStepRange();
+      else if (s === 3) renderStepName();
+    }
+
+    // ============ STEP 1 : SHEET ============
+    function renderStepSheet() {
+      $('wizBody').innerHTML =
+        '<label class="field-label">1 · Choose a spreadsheet</label>' +
+        '<input type="text" id="pickerSearch" placeholder="🔍  Search your spreadsheets…" oninput="onPickerSearchInput()" />' +
+        '<div class="picker-list" id="pickerList"></div>' +
+        '<button class="btn" id="pickerMore" style="display:none;width:100%;margin-top:4px" onclick="pickerLoadMore()">Load more</button>' +
+        '<div class="or-divider">or paste a link / ID</div>' +
+        '<div class="sheet-input-row">' +
+        '  <input type="text" id="sheetIdInput" value="' + escapeHtml(sheetId) + '" placeholder="Paste Sheet link or ID" />' +
+        '  <button class="picker-btn" onclick="applyPastedSheet()">Apply</button>' +
+        '</div>' +
+        '<div class="step-actions">' +
+        '  <button class="btn btn-sm" onclick="useLinkedSheet()">⚡ Use linked sheet</button>' +
+        '</div>' +
+        '<label class="field-label" style="margin-top:12px">2 · Sheet Tab</label>' +
+        '<select id="sheetTabSelect"></select>';
+
+      if (!sheetId) useLinkedSheet();
+    }
+
+    function runPickerSearch(preselectId) {
+      if (pickerLoading) return;
+      pickerLoading = true;
+      $('pickerList').innerHTML = '<div class="empty-state"><div class="big">⏳</div>Loading your sheets…</div>';
+      google.script.run
+        .withSuccessHandler(function (res) {
+          pickerLoading = false;
+          if (!res.success) {
+            $('pickerList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(res.error) + '</div>';
+            return;
+          }
+          pickerItems = pickerItems.concat(res.data || []);
+          renderPickerList();
+          $('pickerMore').style.display = res.nextToken ? 'block' : 'none';
+          pickerToken = res.nextToken || '';
+          if (preselectId && pickerItems.some(function (s) { return s.id === preselectId; })) {
+            onSheetPicked(preselectId);
+          }
+        })
+        .withFailureHandler(function (err) {
+          pickerLoading = false;
+          $('pickerList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(err.message) + '</div>';
+        })
+        .searchSpreadsheets(pickerQuery, 50, pickerToken);
+    }
+
+    function onPickerSearchInput() {
+      if (pickerTimer) clearTimeout(pickerTimer);
+      pickerTimer = setTimeout(function () {
+        pickerQuery = $('pickerSearch').value;
+        pickerToken = '';
+        pickerItems = [];
+        runPickerSearch('');
+      }, 350);
+    }
+
+    function pickerLoadMore() { runPickerSearch(''); }
+
+    function renderPickerList() {
+      var list = $('pickerList');
+      if (!pickerItems.length) {
+        list.innerHTML = '<div class="empty-state"><div class="big">🗂️</div>No spreadsheets found.</div>';
+        return;
+      }
+      list.innerHTML = pickerItems.map(function (s) {
+        return '<button type="button" class="sheet-pick' + (s.id === sheetId ? ' selected' : '') + '" onclick="onSheetPicked(\'' + escapeHtml(s.id) + '\')">' +
+          '<span class="sheet-pick-icon">📊</span>' +
+          '<span class="sheet-pick-name">' + escapeHtml(s.name) + '</span></button>';
+      }).join('');
+    }
+
+    function onSheetPicked(id) {
+      sheetId = id;
+      var input = $('sheetIdInput');
+      if (input) input.value = id;
+      renderPickerList();
+      loadSheetTabs();
+    }
+
+    function extractSheetId(value) {
+      var v = (value || '').trim();
+      if (!v) return '';
+      if (/[?/]/.test(v)) {
+        var m = v.match(/[a-zA-Z0-9_-]{25,}/);
+        if (m) return m[0];
+      }
+      return v;
+    }
+
+    function applyPastedSheet() {
+      var id = extractSheetId($('sheetIdInput').value);
+      if (!id) { toast('Paste a Sheet ID or link.', 'warning'); return; }
+      sheetId = id;
+      $('sheetIdInput').value = id;
+      loadSheetTabs();
+    }
+
+    function useLinkedSheet() {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            sheetId = res.data;
+            $('sheetIdInput').value = res.data;
+            renderPickerList();
+            loadSheetTabs();
+          } else {
+            toast(res.error, 'warning');
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .getLinkedSpreadsheet(currentFormId);
+    }
+
+    function loadSheetTabs() {
+      var id = sheetId || $('sheetIdInput').value.trim();
+      if (!id) return;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (!res.success || !res.data.length) { toast(res.error || 'No sheet tabs found.', 'warning'); return; }
+          var sel = $('sheetTabSelect');
+          var opts = '<option value="">-- Select Sheet --</option>';
+          res.data.forEach(function (s) {
+            opts += '<option value="' + escapeHtml(s) + '"' + (s === sheetName ? ' selected' : '') + '>' + escapeHtml(s) + '</option>';
+          });
+          sel.innerHTML = opts;
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .getSheetNames(id);
+    }
+
+    // ============ STEP 2 : RANGE ============
+    function renderStepRange() {
+      $('wizBody').innerHTML =
+        '<div class="sheet-line">Sheet: ' + escapeHtml(sheetName) + '</div>' +
+        savedRangesHtml() +
+        '<label class="field-label">Column</label>' +
+        '<select id="columnSelect" onchange="onColumnChange()"></select>' +
+        '<p class="hint">*Column must have a header in row 1.</p>' +
+        '<div style="margin-top:12px"><label class="field-label">Preview of range data</label>' +
+        '<div class="preview-box" id="previewBox"><div class="ph">Select a column to preview.</div></div></div>';
+      loadHeaders();
+    }
+
+    function savedRangesHtml() {
+      var keys = Object.keys(namedRanges);
+      if (keys.length === 0) return '';
+      var opts = '<option value="">-- Reuse a saved range --</option>';
+      keys.forEach(function (k) { opts += '<option value="' + escapeHtml(k) + '">' + escapeHtml(k) + '</option>'; });
+      return '<label class="field-label">Saved ranges</label>' +
+        '<select id="savedRange" onchange="onSavedRangePick(this.value)">' + opts + '</select>' +
+        '<div style="height:10px"></div>';
+    }
+
+    function onSavedRangePick(name) {
+      if (!name) return;
+      var r = namedRanges[name];
+      if (!r) return;
+      sheetId = r.sheetId;
+      sheetName = r.sheetName || '';
+      column = r.column || '';
+      rangeName = name;
+      advanced = {
+        capacityColumn: r.capacityColumn || '',
+        sortOrder: r.sortOrder || 'none',
+        includeBlank: !!r.includeBlank,
+        startRow: r.startRow || 1,
+        endRow: r.endRow || 0
+      };
+      renderStepRange();
+    }
+
+    function loadHeaders() {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (!res.success) { toast(res.error, 'error'); return; }
+          headers = res.data || [];
+          var sel = $('columnSelect');
+          var opts = '<option value="">-- Select Column --</option>';
+          headers.forEach(function (h, idx) {
+            if (h === '') return;
+            opts += '<option value="' + getDefaultColumn(idx) + '"' + (getDefaultColumn(idx) === column ? ' selected' : '') + '>' + escapeHtml(h) + '</option>';
+          });
+          sel.innerHTML = opts;
+          if (column) onColumnChange();
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .getSheetHeaders(sheetId, sheetName);
+    }
+
+    function onColumnChange() {
+      column = $('columnSelect').value;
+      if (!column) return;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          preview = res.success ? res.data : [];
+          renderPreviewBox();
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .previewColumn(sheetId, sheetName, column);
+    }
+
+    function renderPreviewBox() {
+      var box = $('previewBox');
+      if (!box) return;
+      if (preview.length === 0) { box.innerHTML = '<div class="ph">No data below the header.</div>'; return; }
+      var html = '<div class="ph">' + escapeHtml(sheetName) + '</div>';
+      preview.slice(0, 30).forEach(function (v) {
+        html += '<div class="preview-item">' + escapeHtml(v) + '</div>';
+      });
+      if (preview.length > 30) html += '<div class="preview-item blank">+' + (preview.length - 30) + ' more…</div>';
+      box.innerHTML = html;
+    }
+
+    // ============ STEP 3 : NAME + SYNC ============
+    function renderStepName() {
+      $('wizBody').innerHTML =
+        '<label class="field-label">Range name</label>' +
+        '<input id="rangeNameInput" type="text" value="' + escapeHtml(rangeName || currentColumnHeader()) + '" placeholder="e.g. Country List" />' +
+        '<p class="hint">*Give your range a name. It can be re-used in other questions.</p>' +
+        '<details class="advanced"><summary>Advanced options</summary>' +
+        '<div class="adv-grid">' +
+        '  <div><label>Capacity column (opt)</label><input id="advCap" type="text" value="' + escapeHtml(advanced.capacityColumn) + '" placeholder="A"></div>' +
+        '  <div><label>Sort</label><select id="advSort"><option value="none">None</option><option value="asc">A → Z</option><option value="desc">Z → A</option></select></div>' +
+        '  <div><label>Start row</label><input id="advStart" type="number" value="' + advanced.startRow + '" min="1"></div>' +
+        '  <div><label>End row (0 = last)</label><input id="advEnd" type="number" value="' + advanced.endRow + '" min="0"></div>' +
+        '</div>' +
+        '<div class="adv-chk"><input id="advBlank" type="checkbox"' + (advanced.includeBlank ? ' checked' : '') + '> + blank option</div>' +
+        '</details>' +
+        '<div style="margin-top:12px"><label class="field-label">Preview of range data</label>' +
+        '<div class="preview-box" id="previewBox2"></div></div>';
+      if (advanced.sortOrder === 'asc') $('advSort').value = 'asc';
+      else if (advanced.sortOrder === 'desc') $('advSort').value = 'desc';
+      if (preview.length === 0) onColumnChange();
+      else renderPreviewBox();
+    }
+
+    function currentColumnHeader() {
+      for (var i = 0; i < headers.length; i++) {
+        if (headers[i] && getDefaultColumn(i) === column) return headers[i];
+      }
+      return '';
+    }
+
+    function saveAndSync() {
+      var name = $('rangeNameInput').value.trim();
+      var adv = {
+        capacityColumn: $('advCap').value.trim(),
+        sortOrder: $('advSort').value,
+        includeBlank: $('advBlank').checked,
+        startRow: parseInt($('advStart').value, 10) || 1,
+        endRow: parseInt($('advEnd').value, 10) || 0
+      };
+      var mapping = {
+        questionId: currentQuestionId,
+        sheetId: sheetId,
+        sheetName: sheetName,
+        column: column,
+        rangeName: name,
+        capacityColumn: adv.capacityColumn,
+        sortColumn: '',
+        sortOrder: adv.sortOrder,
+        startRow: adv.startRow,
+        endRow: adv.endRow,
+        includeBlank: adv.includeBlank
+      };
+      $('nextBtn').disabled = true;
+      $('nextBtn').textContent = 'Saving…';
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (!res.success) {
+            toast('Save failed: ' + res.error, 'error');
+            $('nextBtn').disabled = false;
+            $('nextBtn').textContent = 'Save & Sync';
+            return;
+          }
+          toast('Mapping saved — syncing question…', 'info');
+          google.script.run
+            .withSuccessHandler(function (sres) {
+              if (sres.success) toast('✓ Synced ' + sres.processed + ' option(s)!', 'success');
+              else toast('⚠ ' + (sres.message || 'Sync completed with issues.'), 'warning');
+              setTimeout(function () { google.script.host.close(); }, 900);
+            })
+            .withFailureHandler(function (err) {
+              toast('Error: ' + err.message, 'error');
+              $('nextBtn').disabled = false;
+              $('nextBtn').textContent = 'Save & Sync';
+            })
+            .syncQuestion(currentFormId, currentQuestionId);
+        })
+        .withFailureHandler(function (err) {
+          toast('Error: ' + err.message, 'error');
+          $('nextBtn').disabled = false;
+          $('nextBtn').textContent = 'Save & Sync';
+        })
+        .saveQuestionMapping(currentFormId, JSON.stringify(mapping));
+    }
+
+    // ============ HELPERS ============
+    function closeDialog() { google.script.host.close(); }
+
+    var toastTimer = null;
+    function toast(msg, type) {
+      var box = $('toastBox');
+      box.textContent = msg;
+      box.className = 'toast toast-' + (type || 'info');
+      box.style.display = 'block';
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { box.style.display = 'none'; }, 3500);
+    }
+
+    function getDefaultColumn(index) {
+      var col = '';
+      var n = index + 1;
+      while (n > 0) {
+        var rem = (n - 1) % 26;
+        col = String.fromCharCode(65 + rem) + col;
+        n = Math.floor((n - 1) / 26);
+      }
+      return col;
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.textContent = text == null ? '' : String(text);
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

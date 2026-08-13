@@ -10,7 +10,7 @@ The add-on runs as a clean, card-based sidebar inside your Google Form editor, l
 
 Unlike traditional sync tools, DocuForm Sync gives you complete control straight from the sidebar:
 
-* **Simple Question-by-Question Flow:** Each supported question gets a **Populate from range** toggle — a `+` opens a 3-step wizard (Select Sheet → Select Range with live preview → Name range) and **Save & Sync** updates it instantly.
+* **Simple Question-by-Question Flow:** Each supported question gets a **Populate from range** toggle — a `+` opens a **center-screen 3-step wizard** (Select Sheet → Select Range with live preview → Name range) and **Save & Sync** updates it instantly.
 * **Supported Question Types:**
   * 🎯 **Dropdown** (`ListItem`)
   * 🔘 **Multiple Choice**

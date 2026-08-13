@@ -60,6 +60,30 @@ function INITIALIZE_ADDON_SIDEBAR() {
   }
 }
 
+/**
+ * Opens the center-screen picker wizard dialog for a specific question.
+ * Called from the sidebar "+" button / "Populate from range" checkbox.
+ */
+function OPEN_PICKER_DIALOG(questionId) {
+  try {
+    var form = FormApp.getActiveForm();
+    var tpl = HtmlService.createTemplateFromFile("UI_Dialog");
+    tpl.formId = form ? form.getId() : "";
+    tpl.questionId = questionId || "";
+    var html = tpl
+      .evaluate()
+      .setWidth(760)
+      .setHeight(660)
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    FormApp.getUi().showModalDialog(html, "⚡ " + APP_NAME);
+  } catch (e) {
+    Logger.log("[DocuForm Sync] OPEN_PICKER_DIALOG error: " + e.toString());
+    try {
+      FormApp.getUi().alert("Could not open the picker.\n" + e.message);
+    } catch (e2) {}
+  }
+}
+
 // ============================ HELP ============================
 
 function showHelp() {
@@ -93,12 +117,30 @@ function getFormConfig(formId) {
 
 function saveFormConfig(formId, config) {
   PropertiesService.getUserProperties().setProperty(CFG_PREFIX + formId, JSON.stringify(config));
+  bumpConfigVersion(formId);
 }
 
 function deleteFormConfig(formId) {
   var props = PropertiesService.getUserProperties();
   props.deleteProperty(CFG_PREFIX + formId);
   props.deleteProperty(OLD_CFG_PREFIX + formId);
+  bumpConfigVersion(formId);
+}
+
+// ============================ CONFIG VERSION (sidebar refresh) ============================
+
+var VER_PROP = "DocuFormSync_Version";
+
+function bumpConfigVersion(formId) {
+  if (!formId) return;
+  var p = PropertiesService.getUserProperties();
+  var v = parseInt(p.getProperty(VER_PROP + "_" + formId), 10) || 0;
+  p.setProperty(VER_PROP + "_" + formId, String(v + 1));
+}
+
+function getConfigVersion(formId) {
+  if (!formId) return 0;
+  return parseInt(PropertiesService.getUserProperties().getProperty(VER_PROP + "_" + formId), 10) || 0;
 }
 
 function getAllFormConfigs() {
