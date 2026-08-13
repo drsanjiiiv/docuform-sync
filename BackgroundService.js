@@ -107,11 +107,15 @@ function getSavedConfiguration() {
 
 function setupOnSubmitTrigger(formId) {
   try {
-    const form = FormApp.openById(formId);
+    let form = null;
+    try { form = FormApp.getActiveForm(); } catch (e) {}
+    if (!form && formId) form = FormApp.openById(formId);
+    if (!form) return { success: false, message: "Could not resolve the form for the on-submit trigger." };
+    const formSourceId = form.getId();
     const existingTriggers = ScriptApp.getProjectTriggers();
     for (const t of existingTriggers) {
       if (t.getHandlerFunction() === "performAutoSync" &&
-          t.getTriggerSourceId() === formId &&
+          t.getTriggerSourceId() === formSourceId &&
           t.getEventType() === ScriptApp.EventType.ON_FORM_SUBMIT) {
         Logger.log("[DocuForm Sync] On-submit trigger already exists.");
         return { success: true, message: "Trigger already exists." };

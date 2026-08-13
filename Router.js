@@ -18,7 +18,7 @@ function _wrap(result) {
 function getFormTitle(formId) {
   try {
     const id = (formId || "").trim();
-    const form = id ? FormApp.openById(id) : FormApp.getActiveForm();
+    const form = id ? (FormApp.getActiveForm() || FormApp.openById(id)) : FormApp.getActiveForm();
     if (!form) return { success: false, error: "No form found." };
     return { success: true, data: form.getTitle() };
   } catch (e) {
@@ -38,7 +38,7 @@ function getActiveFormId() {
 function getLinkedSpreadsheet(formId) {
   try {
     const id = (formId || "").trim();
-    const form = id ? FormApp.openById(id) : FormApp.getActiveForm();
+    const form = id ? (FormApp.getActiveForm() || FormApp.openById(id)) : FormApp.getActiveForm();
     if (!form) return { success: false, error: "No form found." };
     const dest = form.getDestination(FormApp.DestinationType.SPREADSHEET);
     if (!dest) {

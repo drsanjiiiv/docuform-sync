@@ -176,8 +176,14 @@ class SyncEngine {
 
   _openForm(formId) {
     const id = (formId || "").trim();
-    if (id) return FormApp.openById(id);
-    return FormApp.getActiveForm();
+    try {
+      const active = FormApp.getActiveForm();
+      if (active) return active;
+    } catch (e) {}
+    if (id) {
+      return FormApp.openById(id);
+    }
+    return null;
   }
 
   // ============================ WRITE CHOICES ============================

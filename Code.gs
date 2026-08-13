@@ -52,7 +52,6 @@ function INITIALIZE_ADDON_SIDEBAR() {
     }
     var html = HtmlService.createHtmlOutputFromFile("UI_Main")
       .setTitle("⚡ " + APP_NAME)
-      .setWidth(380)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
     FormApp.getUi().showSidebar(html);
   } catch (err) {
