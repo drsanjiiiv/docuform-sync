@@ -142,22 +142,16 @@ function _createTrigger(intervalMinutes) {
 
     const triggerBuilder = ScriptApp.newTrigger(TRIGGER_HANDLER).timeBased();
 
+    // Add-ons can only schedule a time-driven trigger once per hour at most, so
+    // valid intervals are 1h / 7h / 12h / 24h.
     if (intervalMinutes >= 1440) {
       triggerBuilder.everyDays(1);
-    } else if (intervalMinutes >= 360) {
-      triggerBuilder.everyHours(6);
-    } else if (intervalMinutes >= 120) {
-      triggerBuilder.everyHours(2);
-    } else if (intervalMinutes >= 60) {
-      triggerBuilder.everyHours(1);
-    } else if (intervalMinutes >= 30) {
-      triggerBuilder.everyMinutes(30);
-    } else if (intervalMinutes >= 15) {
-      triggerBuilder.everyMinutes(15);
-    } else if (intervalMinutes >= 10) {
-      triggerBuilder.everyMinutes(10);
+    } else if (intervalMinutes >= 720) {
+      triggerBuilder.everyHours(12);
+    } else if (intervalMinutes >= 420) {
+      triggerBuilder.everyHours(7);
     } else {
-      triggerBuilder.everyMinutes(5);
+      triggerBuilder.everyHours(1);
     }
 
     triggerBuilder.create();

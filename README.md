@@ -17,7 +17,7 @@ Unlike traditional sync tools, DocuForm Sync gives you complete control straight
   * ☑️ **Checkboxes**
   * 🧩 **Grid** (columns)
 * **Smart Column Mapping:** Optional **Capacity column** (exclude rows where a quantity is ≤ 0), **Sorting** (A→Z / Z→A, with an optional separate sort column), **+ blank option**, and **Start/End row ranges**.
-* **Auto-Sync Engine:** Keep options refreshed on a schedule (every 5 minutes up to daily) or **on every form submit** — fully multi-form safe, with a single shared time-driven trigger.
+* **Auto-Sync Engine:** Keep options refreshed on a schedule (**1h / 7h / 12h / 24h**) or **on every form submit** — fully multi-form safe, with a single shared time-driven trigger.
 * **Sync History:** Every run (manual, scheduled, or submit-triggered) is logged with processed/error counts right in the sidebar.
 
 ---
