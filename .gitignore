@@ -10,3 +10,7 @@ node_modules/
 
 # Internal verification working notes
 *.txt
+
+# Session/local docs (kept on disk, not tracked in git; already excluded from clasp via *.md)
+CODEBASE.md
+SESSION_NOTES.md
