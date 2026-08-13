@@ -82,6 +82,9 @@
     .btn.primary { background: var(--primary); color: #fff; border: none; }
     .btn.primary:hover { background: var(--accent); color: var(--primary); }
 
+    .picker-btn.applied { background: var(--green); }
+    .picker-btn.applied:hover { background: var(--green); }
+
     .picker-list { max-height: 26vh; overflow-y: auto; margin-top: 8px; }
     .sheet-pick {
       display: flex; align-items: center; gap: 8px; width: 100%;
@@ -198,6 +201,8 @@
     var pickerLoading = false;
     var pickerTimer = null;
 
+    var SHEET_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="21" height="21" rx="2.5" fill="#fff" stroke="#dadce0"/><g stroke="#34a853" stroke-width="1.2" fill="none"><path d="M5.5 7.5h13M5.5 11h13M5.5 14.5h13M5.5 18h13"/><path d="M9.5 7.5v10.5M13.5 7.5v10.5M17.5 7.5v10.5"/></g></svg>';
+
     function $(id) { return document.getElementById(id); }
 
     window.onload = function () { init(); };
@@ -295,15 +300,10 @@
         '<div class="or-divider">or paste a link / ID</div>' +
         '<div class="sheet-input-row">' +
         '  <input type="text" id="sheetIdInput" value="' + escapeHtml(sheetId) + '" placeholder="Paste Sheet link or ID" />' +
-        '  <button class="picker-btn" onclick="applyPastedSheet()">Apply</button>' +
-        '</div>' +
-        '<div class="step-actions">' +
-        '  <button class="btn btn-sm" onclick="useLinkedSheet()">⚡ Use linked sheet</button>' +
+        '  <button class="picker-btn" id="applyBtn" onclick="applyPastedSheet()">Apply</button>' +
         '</div>' +
         '<label class="field-label" style="margin-top:12px">2. Sheet Tab</label>' +
         '<select id="sheetTabSelect"></select>';
-
-      if (!sheetId) useLinkedSheet();
     }
 
     function runPickerSearch(preselectId) {
@@ -352,7 +352,7 @@
       }
       list.innerHTML = pickerItems.map(function (s) {
         return '<button type="button" class="sheet-pick' + (s.id === sheetId ? ' selected' : '') + '" onclick="onSheetPicked(\'' + escapeHtml(s.id) + '\')">' +
-          '<span class="sheet-pick-icon">📊</span>' +
+          '<span class="sheet-pick-icon">' + SHEET_ICON + '</span>' +
           '<span class="sheet-pick-name">' + escapeHtml(s.name) + '</span></button>';
       }).join('');
     }
@@ -380,39 +380,43 @@
       if (!id) { toast('Paste a Sheet ID or link.', 'warning'); return; }
       sheetId = id;
       $('sheetIdInput').value = id;
-      loadSheetTabs();
+      renderPickerList();
+      var btn = $('applyBtn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Applying…'; }
+      loadSheetTabs(function (ok) {
+        var b = $('applyBtn');
+        if (!b) return;
+        b.disabled = false;
+        b.classList.remove('applied');
+        if (ok) {
+          b.textContent = '✓ Applied';
+          b.classList.add('applied');
+          setTimeout(function () { if (b) b.textContent = 'Apply'; }, 2200);
+        } else {
+          b.textContent = 'Apply';
+        }
+      });
     }
 
-    function useLinkedSheet() {
-      google.script.run
-        .withSuccessHandler(function (res) {
-          if (res.success) {
-            sheetId = res.data;
-            $('sheetIdInput').value = res.data;
-            renderPickerList();
-            loadSheetTabs();
-          } else {
-            toast(res.error, 'warning');
-          }
-        })
-        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
-        .getLinkedSpreadsheet(currentFormId);
-    }
-
-    function loadSheetTabs() {
+    function loadSheetTabs(cb) {
       var id = sheetId || $('sheetIdInput').value.trim();
-      if (!id) return;
+      if (!id) { if (cb) cb(false); return; }
       google.script.run
         .withSuccessHandler(function (res) {
-          if (!res.success || !res.data.length) { toast(res.error || 'No sheet tabs found.', 'warning'); return; }
+          if (!res.success || !res.data.length) {
+            toast(res.error || 'No sheet tabs found.', 'warning');
+            if (cb) cb(false);
+            return;
+          }
           var sel = $('sheetTabSelect');
           var opts = '<option value="">-- Select Sheet --</option>';
           res.data.forEach(function (s) {
             opts += '<option value="' + escapeHtml(s) + '" title="' + escapeHtml(s) + '"' + (s === sheetName ? ' selected' : '') + '>' + escapeHtml(s) + '</option>';
           });
           sel.innerHTML = opts;
+          if (cb) cb(true);
         })
-        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); if (cb) cb(false); })
         .getSheetNames(id);
     }
 
