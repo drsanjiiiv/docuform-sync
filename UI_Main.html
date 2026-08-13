@@ -85,7 +85,7 @@
     .q-row .q-check { margin-top: 3px; }
     .q-main { flex: 1; min-width: 0; }
     .q-title { font-size: 13px; font-weight: 500; line-height: 1.35; word-break: break-word; }
-    .q-src { font-size: 11.5px; color: var(--green); margin-top: 3px; word-break: break-all; }
+    .q-src { font-size: 10.5px; color: var(--green); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; word-break: normal; }
     .q-empty-src { font-size: 11.5px; color: var(--faint); margin-top: 3px; }
     .badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 500; white-space: nowrap; }
     .b-sup { background: var(--blue-bg); color: var(--primary); }
@@ -325,7 +325,7 @@
         html += '<input class="q-check" type="checkbox" ' + (cfg ? 'checked' : '') + ' onchange="togglePopulate(\'' + q.id + '\', this.checked)" />';
         html += '<div class="q-main">';
         html += '<div class="q-title">' + escapeHtml(q.title || '(untitled)') + ' <span class="badge b-sup">' + escapeHtml(q.typeName) + '</span></div>';
-        if (cfg) html += '<div class="q-src">↳ ' + escapeHtml(src) + '</div>';
+        if (cfg) html += '<div class="q-src" title="' + escapeHtml(src) + '">↳ ' + escapeHtml(src) + '</div>';
         else html += '<div class="q-empty-src">Not syncing — pick a range</div>';
         html += '</div>';
         html += '<button class="' + (cfg ? 'range-btn' : 'plus-btn') + '" title="' + (cfg ? 'Apply new range' : 'Add range') + '" onclick="openPickerDialog(\'' + q.id + '\')">' + (cfg ? 'Apply new range' : '+') + '</button>';
