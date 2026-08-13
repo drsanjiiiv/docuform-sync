@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+
+  <!-- ==========================================
+       STYLES (DocuMail Pro palette)
+       ========================================== -->
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #174ea6;
+      --accent: #04fbbc;
+      --warn: #c5221f;
+      --warn-bg: #fce8e6;
+      --border: #dadce0;
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --text: #202124;
+      --muted: #5f6368;
+      --faint: #9aa0a6;
+      --green: #137333;
+      --green-bg: #e6f4ea;
+      --blue-bg: #e8f0fe;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: #ffffff;
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid #e8eaed;
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+    .sidebar-header h2 { margin: 0; font-size: 17px; color: var(--primary); font-weight: 600; }
+    .sidebar-header p.sub { margin: 2px 0 0 0; font-size: 12px; color: var(--muted); }
+    .sidebar-header p.privacy {
+      margin: 10px 0 0 0; font-size: 11px; color: var(--faint); line-height: 1.5;
+    }
+    .sidebar-header p.privacy a { color: var(--primary); text-decoration: none; font-weight: 500; }
+
+    .seg-tabs {
+      display: flex; gap: 4px; padding: 8px 12px;
+      border-bottom: 1px solid #e8eaed; background: #ffffff; flex-shrink: 0;
+    }
+    .seg-btn {
+      flex: 1; padding: 7px 4px; font-size: 12px; font-weight: 500;
+      border: none; border-radius: 6px; background: transparent;
+      color: var(--muted); cursor: pointer;
+    }
+    .seg-btn.active { background: var(--blue-bg); color: var(--primary); }
+    .seg-btn:hover:not(.active) { background: var(--bg); }
+
+    .content {
+      flex: 1; overflow-y: auto; padding: 14px 16px;
+      background: var(--bg); padding-bottom: 20px;
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px; margin-bottom: 12px;
+    }
+    .card h3 { margin: 0 0 2px 0; font-size: 14px; font-weight: 600; }
+    .card p.sub { margin: 0 0 12px 0; font-size: 12px; color: var(--muted); }
+
+    label.field-label { display: block; font-size: 12px; font-weight: 500; margin: 0 0 4px 0; color: var(--muted); }
+    input[type=text], input[type=number], select {
+      width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 13px; background: var(--surface); color: var(--text);
+      outline: none; box-sizing: border-box;
+    }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15); }
+    .hint { font-size: 11px; color: var(--muted); margin: 4px 0 0 0; }
+
+    .step-dots { display: flex; gap: 4px; margin-bottom: 12px; }
+    .step-dot { flex: 1; height: 4px; border-radius: 2px; background: #e8eaed; }
+    .step-dot.active { background: var(--primary); }
+    .step-dot.done { background: var(--green); }
+
+    .q-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px; margin-bottom: 8px;
+    }
+    .q-card:hover { border-color: var(--primary); }
+    .q-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
+    .q-title { font-size: 13px; font-weight: 500; line-height: 1.35; word-break: break-word; }
+    .badge { font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: 500; white-space: nowrap; }
+    .b-sup { background: var(--blue-bg); color: var(--primary); }
+    .b-un  { background: #f1f3f4; color: var(--faint); }
+    .b-ok  { background: var(--green-bg); color: var(--green); }
+    .b-bad { background: var(--warn-bg); color: var(--warn); }
+
+    .q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+    .q-grid label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .chk-row { display: flex; align-items: center; gap: 12px; font-size: 12px; margin-top: 4px; }
+    .chk-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+    .btn {
+      padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+    }
+    .btn:hover { background: var(--bg); }
+    .btn-primary {
+      background: var(--primary); color: #ffffff; border: none; flex: 1;
+    }
+    .btn-primary:hover { background: var(--accent); color: var(--primary); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .sidebar-footer {
+      flex-shrink: 0; border-top: 1px solid #e8eaed; background: #ffffff;
+      padding: 10px 16px; display: flex; gap: 8px;
+    }
+    .footer-btn {
+      flex: 1; padding: 11px; border-radius: 8px; font-weight: 600; font-size: 13px;
+      cursor: pointer; border: none; background: var(--primary); color: #fff; transition: all 0.2s ease;
+    }
+    .footer-btn:hover { background: var(--accent); color: var(--primary); }
+    .footer-btn.ghost { flex: 0 0 auto; background: #fff; color: var(--muted); border: 1px solid var(--border); }
+    .footer-btn.ghost:hover { background: var(--bg); color: var(--text); }
+
+    .empty-state {
+      text-align: center; color: var(--muted); padding: 28px 16px;
+      border: 1px dashed var(--border); border-radius: 10px; background: var(--surface);
+    }
+    .empty-state .big { font-size: 36px; margin-bottom: 8px; }
+
+    .choice-chip {
+      display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 12px;
+      background: var(--blue-bg); color: var(--primary); margin: 2px;
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;
+    }
+    .choice-chip.blank { background: #f1f3f4; color: var(--muted); font-style: italic; }
+
+    .toggle-wrap { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-wrap .track {
+      position: absolute; cursor: pointer; inset: 0; background-color: var(--border);
+      border-radius: 9999px; transition: background-color 0.2s ease;
+    }
+    .toggle-wrap .thumb {
+      position: absolute; height: 16px; width: 16px; left: 3px; top: 3px;
+      background-color: #fff; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .toggle-wrap input:checked + .track { background-color: var(--primary); }
+    .toggle-wrap input:checked ~ .thumb { transform: translateX(18px); }
+
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; }
+    .setting-row p { margin: 0; }
+    .setting-row p strong { font-size: 13px; font-weight: 500; display: block; }
+    .setting-row p span { font-size: 11px; color: var(--muted); }
+
+    .history-item {
+      padding: 8px 10px; border-left: 3px solid var(--border); margin-bottom: 6px;
+      border-radius: 0 6px 6px 0; background: var(--surface); font-size: 12px;
+    }
+    .history-item.ok { border-left-color: var(--green); }
+    .history-item.bad { border-left-color: var(--warn); }
+
+    .toast {
+      position: fixed; bottom: 72px; right: 12px; left: 12px; padding: 10px 14px;
+      border-radius: 8px; font-size: 12px; font-weight: 500; z-index: 1000;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15); display: none;
+    }
+    .toast-info { background: #e8f0fe; color: #174ea6; }
+    .toast-success { background: #e6f4ea; color: #137333; }
+    .toast-error { background: #fce8e6; color: #c5221f; }
+    .toast-warning { background: #fef7e0; color: #7a5200; }
+
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #d0d3d6; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================
+       HEADER
+       ========================================== -->
+  <div class="sidebar-header">
+    <h2>⚡ DocuForm Sync</h2>
+    <p class="sub">Sheet ↔ Form Dropdown Sync Engine</p>
+    <p class="privacy">
+      🔒 Data stays in your Google Workspace, nothing stored externally.
+      <a href="https://apps.pwmai.com/privacy-policy/" target="_blank">Privacy Policy</a>
+    </p>
+  </div>
+
+  <!-- ==========================================
+       TABS
+       ========================================== -->
+  <div class="seg-tabs">
+    <button class="seg-btn active" data-tab="wizard" onclick="switchTab('wizard')">⚡ Wizard</button>
+    <button class="seg-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ Auto-Sync</button>
+    <button class="seg-btn" data-tab="history" onclick="switchTab('history')">📋 History</button>
+  </div>
+
+  <!-- ==========================================
+       CONTENT
+       ========================================== -->
+  <div class="content scrollbar-thin" id="content">
+
+    <!-- ========== TAB: WIZARD ========== -->
+    <div class="tab-pane active" id="pane-wizard">
+      <div class="step-dots">
+        <div class="step-dot active" id="step1-dot"></div>
+        <div class="step-dot" id="step2-dot"></div>
+        <div class="step-dot" id="step3-dot"></div>
+        <div class="step-dot" id="step4-dot"></div>
+      </div>
+
+      <!-- STEP 1 : CONNECT -->
+      <div id="step-1">
+        <div class="card">
+          <h3>Connect</h3>
+          <p class="sub">Link a Google Form and Spreadsheet to start syncing.</p>
+
+          <label class="field-label">Form ID</label>
+          <input id="formIdInput" type="text" placeholder="e.g. 1a2B3c4D5e6F7g8H9i0J" />
+          <div class="btn-row" style="margin-top:6px">
+            <button class="btn" onclick="fetchFormTitle()">Verify Form</button>
+            <button class="btn" onclick="detectSheet()">Use linked sheet</button>
+          </div>
+          <p class="hint" id="formTitleDisplay"></p>
+
+          <label class="field-label" style="margin-top:10px">Spreadsheet ID</label>
+          <input id="sheetIdInput" type="text" placeholder="Paste Sheet ID or use linked sheet" />
+
+          <div id="sheetNamesWrap" style="display:none;margin-top:10px">
+            <label class="field-label">Sheet Tab</label>
+            <select id="sheetNameSelect" onchange="currentSheetName=this.value">
+              <option value="">-- Select Sheet --</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 : MAP -->
+      <div id="step-2" style="display:none">
+        <div class="card">
+          <h3>Map Questions</h3>
+          <p class="sub">Choose the Sheet column that populates each question's options.</p>
+        </div>
+        <div id="questionsList">
+          <div class="empty-state"><div class="big">⏳</div>Loading questions...</div>
+        </div>
+      </div>
+
+      <!-- STEP 3 : PREVIEW -->
+      <div id="step-3" style="display:none">
+        <div class="card">
+          <h3>Preview</h3>
+          <p class="sub">Review the options that will be written to your form.</p>
+        </div>
+        <div id="previewContent">
+          <div class="empty-state"><div class="big">👁️</div>Press "Preview" to see the data.</div>
+        </div>
+      </div>
+
+      <!-- STEP 4 : RESULTS -->
+      <div id="step-4" style="display:none">
+        <div class="card">
+          <h3>Results</h3>
+          <p class="sub">Sync complete. Review the outcome below.</p>
+          <div id="syncSummary" style="font-size:13px;font-weight:600;margin:8px 0 4px 0"></div>
+          <div id="syncDetails"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== TAB: SETTINGS ========== -->
+    <div class="tab-pane" id="pane-settings">
+      <div class="card">
+        <h3>Auto-Sync</h3>
+        <p class="sub">Automatically refresh form options from your sheet.</p>
+
+        <div class="setting-row">
+          <p><strong>Enable Auto-Sync</strong><span>Repopulate options on a schedule</span></p>
+          <label class="toggle-wrap">
+            <input id="autoSyncToggle" type="checkbox" onchange="applyAutoSync()" />
+            <span class="track"></span>
+            <span class="thumb"></span>
+          </label>
+        </div>
+
+        <div id="autoSyncOptions" style="display:none">
+          <label class="field-label">Refresh Interval</label>
+          <select id="refreshInterval" onchange="applyAutoSync()">
+            <option value="5">Every 5 minutes</option>
+            <option value="15">Every 15 minutes</option>
+            <option value="30">Every 30 minutes</option>
+            <option value="60" selected>Every hour</option>
+            <option value="360">Every 6 hours</option>
+            <option value="1440">Daily</option>
+          </select>
+
+          <div class="setting-row">
+            <p><strong>Refresh on Form Submit</strong><span>Re-sync after each response</span></p>
+            <label class="toggle-wrap">
+              <input id="onSubmitToggle" type="checkbox" onchange="applyAutoSync()" />
+              <span class="track"></span>
+              <span class="thumb"></span>
+            </label>
+          </div>
+        </div>
+
+        <p class="hint" style="margin-top:10px">Last sync: <span id="lastSyncInfo">Never</span></p>
+      </div>
+
+      <div class="card">
+        <h3>Saved Configuration</h3>
+        <div id="savedConfigDisplay" style="font-size:12px;color:var(--muted)">No configuration saved yet.</div>
+        <div class="btn-row">
+          <button class="btn" onclick="loadSavedConfig()">Load into Wizard</button>
+          <button class="btn" style="color:var(--warn)" onclick="resetConfig()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== TAB: HISTORY ========== -->
+    <div class="tab-pane" id="pane-history">
+      <div class="card">
+        <h3>Sync History</h3>
+        <p class="sub">Recent sync runs for this form.</p>
+      </div>
+      <div id="historyContent">
+        <div class="empty-state"><div class="big">📋</div>No sync history yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       FOOTER
+       ========================================== -->
+  <div class="sidebar-footer">
+    <button class="footer-btn ghost" id="backBtn" style="display:none" onclick="prevStep()">← Back</button>
+    <button class="footer-btn" id="primaryBtn" onclick="nextStep()">Continue →</button>
+  </div>
+
+  <div id="toastBox" class="toast"></div>
+
+  <!-- ==========================================
+       SCRIPTS
+       ========================================== -->
+  <script>
+    // ==========================================
+    // STATE
+    // ==========================================
+    var currentStep = 1;
+    var currentTab = 'wizard';
+    var formQuestions = [];
+    var mappings = [];
+    var currentFormId = '';
+    var currentSheetId = '';
+    var currentSheetName = '';
+    var previewData = {};
+
+    function $(id) { return document.getElementById(id); }
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    window.onload = function () {
+      switchTab('wizard');
+      initSidebar();
+    };
+
+    function initSidebar() {
+      loadActiveForm();
+      loadSettingsTab();
+    }
+
+    function loadActiveForm() {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success && res.data) {
+            currentFormId = res.data;
+            $('formIdInput').value = res.data;
+            fetchFormTitle();
+            detectSheet();
+          }
+        })
+        .withFailureHandler(function (err) { toast('Could not detect the active form: ' + err.message, 'error'); })
+        .getActiveFormId();
+    }
+
+    // ==========================================
+    // TABS
+    // ==========================================
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+      });
+      document.querySelectorAll('.tab-pane').forEach(function (p) {
+        p.classList.toggle('active', p.id === 'pane-' + tab);
+      });
+      if (tab === 'settings') loadSettingsTab();
+      if (tab === 'history') loadHistory();
+    }
+
+    // ==========================================
+    // STEP NAVIGATION
+    // ==========================================
+    function setStep(step) {
+      currentStep = step;
+      for (var i = 1; i <= 4; i++) {
+        $('step' + i + '-dot').classList.remove('active', 'done');
+        $('step-' + i).style.display = (i === step) ? 'block' : 'none';
+        if (i === step) $('step' + i + '-dot').classList.add('active');
+        else if (i < step) $('step' + i + '-dot').classList.add('done');
+      }
+      var primary = $('primaryBtn');
+      var back = $('backBtn');
+      primary.disabled = false;
+      if (step === 1) {
+        primary.textContent = 'Continue →';
+        primary.onclick = nextStep;
+        back.style.display = 'none';
+      } else if (step === 2) {
+        primary.textContent = 'Preview →';
+        primary.onclick = nextStep;
+        back.style.display = 'inline-block';
+        back.onclick = prevStep;
+        back.textContent = '← Back';
+      } else if (step === 3) {
+        primary.textContent = '⚡ Sync Now';
+        primary.onclick = executeSync;
+        back.style.display = 'inline-block';
+        back.onclick = prevStep;
+        back.textContent = '← Back';
+        runPreview();
+      } else if (step === 4) {
+        primary.textContent = '💾 Save Config';
+        primary.onclick = saveConfig;
+        back.style.display = 'inline-block';
+        back.onclick = resetWizard;
+        back.textContent = '↺ Start Over';
+      }
+    }
+
+    function nextStep() {
+      if (currentStep === 1) {
+        currentFormId = $('formIdInput').value.trim();
+        currentSheetId = $('sheetIdInput').value.trim();
+        currentSheetName = $('sheetNameSelect').value || currentSheetName;
+        if (!currentFormId) { toast('Please enter a Form ID.', 'warning'); return; }
+        if (!currentSheetId) { toast('Paste a Spreadsheet ID or tap "Use linked sheet".', 'warning'); return; }
+        loadFormQuestions();
+        return;
+      }
+      if (currentStep === 2) {
+        collectMappings();
+        var active = mappings.filter(function (m) { return m.enabled; });
+        if (active.length === 0) { toast('Enable at least one mapping.', 'warning'); return; }
+        setStep(3);
+        return;
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) setStep(currentStep - 1);
+    }
+
+    function resetWizard() {
+      currentStep = 1;
+      formQuestions = [];
+      mappings = [];
+      previewData = {};
+      setStep(1);
+    }
+
+    // ==========================================
+    // STEP 1 : CONNECT
+    // ==========================================
+    function fetchFormTitle() {
+      var formId = $('formIdInput').value.trim();
+      if (!formId) { toast('Enter a Form ID first.', 'warning'); return; }
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            $('formTitleDisplay').textContent = '✓ ' + res.data;
+            toast('Form verified: ' + res.data, 'success');
+          } else {
+            $('formTitleDisplay').textContent = '✗ ' + res.error;
+            toast(res.error, 'error');
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .getFormTitle(formId);
+    }
+
+    function detectSheet() {
+      var formId = currentFormId || $('formIdInput').value.trim();
+      if (!formId) { toast('Enter a Form ID first.', 'warning'); return; }
+      toast('Detecting linked spreadsheet...', 'info');
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            $('sheetIdInput').value = res.data;
+            currentSheetId = res.data;
+            fetchSheetNames();
+          } else {
+            google.script.run
+              .withSuccessHandler(function (r2) {
+                if (r2.success) {
+                  $('sheetIdInput').value = r2.data;
+                  currentSheetId = r2.data;
+                  fetchSheetNames();
+                } else {
+                  toast(res.error, 'warning');
+                }
+              })
+              .withFailureHandler(function (e2) { toast('Error: ' + e2.message, 'error'); })
+              .getActiveSheetId();
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .getLinkedSpreadsheet(formId);
+    }
+
+    function fetchSheetNames() {
+      var sheetId = $('sheetIdInput').value.trim();
+      if (!sheetId) { toast('Paste a Spreadsheet ID first.', 'warning'); return; }
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            var opts = '<option value="">-- Select Sheet --</option>';
+            res.data.forEach(function (s) {
+              opts += '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>';
+            });
+            $('sheetNameSelect').innerHTML = opts;
+            $('sheetNamesWrap').style.display = 'block';
+            toast(res.data.length + ' sheet tab(s) found.', 'success');
+          } else {
+            toast(res.error, 'error');
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .getSheetNames(sheetId);
+    }
+
+    // ==========================================
+    // STEP 2 : MAP QUESTIONS
+    // ==========================================
+    function loadFormQuestions() {
+      $('questionsList').innerHTML = '<div class="empty-state"><div class="big">⏳</div>Loading questions...</div>';
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            formQuestions = res.data;
+            renderQuestionMappings();
+            setStep(2);
+          } else {
+            toast('Error loading questions: ' + res.error, 'error');
+            $('questionsList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(res.error) + '</div>';
+          }
+        })
+        .withFailureHandler(function (err) {
+          toast('Error: ' + err.message, 'error');
+          $('questionsList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(err.message) + '</div>';
+        })
+        .getFormQuestions(currentFormId);
+    }
+
+    function renderQuestionMappings() {
+      var container = $('questionsList');
+      var supported = formQuestions.filter(function (q) { return q.supported; });
+      var unsupported = formQuestions.filter(function (q) { return !q.supported; });
+
+      if (supported.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="big">🧩</div>No supported questions found.<div class="hint" style="margin-top:6px">Supported: Dropdown, Multiple Choice, Checkboxes, Grid.</div></div>';
+        return;
+      }
+
+      var html = '';
+      supported.forEach(function (q, idx) {
+        var existing = null;
+        for (var i = 0; i < mappings.length; i++) {
+          if (mappings[i].questionId === q.id) { existing = mappings[i]; break; }
+        }
+        var col = existing ? existing.column : getDefaultColumn(idx);
+        var cap = existing && existing.capacityColumn ? existing.capacityColumn : '';
+        var sort = existing && existing.sortOrder ? existing.sortOrder : 'none';
+        var sortCol = existing && existing.sortColumn ? existing.sortColumn : '';
+        var startRow = existing && existing.startRow ? existing.startRow : 1;
+        var endRow = existing && existing.endRow ? existing.endRow : 0;
+        var blank = !!(existing && existing.includeBlank);
+        var enabled = !(existing && existing.enabled === false);
+
+        html += '<div class="q-card" data-qid="' + q.id + '">';
+        html += '<div class="q-head"><span class="q-title">' + escapeHtml(q.title || '(untitled)') + '</span><span class="badge b-sup">' + escapeHtml(q.typeName) + '</span></div>';
+        html += '<div class="q-grid">';
+        html += '<div><label>Column</label><input type="text" class="map-col" placeholder="A" value="' + escapeHtml(col) + '"></div>';
+        html += '<div><label>Capacity (opt)</label><input type="text" class="map-cap" placeholder="0" value="' + escapeHtml(cap) + '"></div>';
+        html += '<div><label>Sort</label><select class="map-sort"><option value="none"' + (sort === 'none' ? ' selected' : '') + '>None</option><option value="asc"' + (sort === 'asc' ? ' selected' : '') + '>A → Z</option><option value="desc"' + (sort === 'desc' ? ' selected' : '') + '>Z → A</option></select></div>';
+        html += '<div><label>Start row</label><input type="number" class="map-start" value="' + startRow + '" min="1"></div>';
+        html += '</div>';
+        html += '<div class="q-grid">';
+        html += '<div><label>Sort column (opt)</label><input type="text" class="map-sortcol" placeholder="A" value="' + escapeHtml(sortCol) + '"></div>';
+        html += '<div><label>End row (0 = last)</label><input type="number" class="map-end" value="' + endRow + '" min="0"></div>';
+        html += '</div>';
+        html += '<div class="chk-row">';
+        html += '<label><input type="checkbox" class="map-blank"' + (blank ? ' checked' : '') + '> + blank option</label>';
+        html += '<label style="margin-left:auto"><input type="checkbox" class="map-enabled"' + (enabled ? ' checked' : '') + '> Enabled</label>';
+        html += '</div></div>';
+      });
+
+      if (unsupported.length > 0) {
+        html += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11px;color:var(--muted)">' + unsupported.length + ' unsupported question(s)</summary>';
+        unsupported.forEach(function (q) {
+          html += '<div class="q-card" style="padding:6px 10px"><span class="badge b-un">' + escapeHtml(q.typeName) + '</span> <span style="font-size:12px">' + escapeHtml(q.title || '(untitled)') + '</span></div>';
+        });
+        html += '</details>';
+      }
+
+      container.innerHTML = html;
+      buildMappings();
+    }
+
+    function buildMappings() {
+      mappings = [];
+      document.querySelectorAll('.q-card').forEach(function (row) {
+        var qId = row.getAttribute('data-qid');
+        var q = null;
+        for (var i = 0; i < formQuestions.length; i++) {
+          if (formQuestions[i].id === qId) { q = formQuestions[i]; break; }
+        }
+        if (!q) return;
+        mappings.push({
+          questionId: qId,
+          questionTitle: q.title,
+          questionType: q.typeName,
+          column: (row.querySelector('.map-col') || {}).value || 'A',
+          capacityColumn: (row.querySelector('.map-cap') || {}).value || '',
+          sortColumn: (row.querySelector('.map-sortcol') || {}).value || '',
+          sortOrder: (row.querySelector('.map-sort') || {}).value || 'none',
+          startRow: parseInt((row.querySelector('.map-start') || {}).value, 10) || 1,
+          endRow: parseInt((row.querySelector('.map-end') || {}).value, 10) || 0,
+          includeBlank: !!(row.querySelector('.map-blank') || {}).checked,
+          enabled: !!(row.querySelector('.map-enabled') || {}).checked,
+          sheetName: $('sheetNameSelect').value || currentSheetName
+        });
+      });
+    }
+
+    function collectMappings() {
+      buildMappings();
+      var active = mappings.filter(function (m) { return m.enabled; });
+      return active;
+    }
+
+    // ==========================================
+    // STEP 3 : PREVIEW
+    // ==========================================
+    function runPreview() {
+      if (!currentFormId || !currentSheetId) return;
+      var active = collectMappings();
+      if (active.length === 0) {
+        $('previewContent').innerHTML = '<div class="empty-state"><div class="big">👁️</div>Enable at least one mapping to preview.</div>';
+        return;
+      }
+      var container = $('previewContent');
+      container.innerHTML = '<div class="empty-state"><div class="big">⏳</div>Loading preview...</div>';
+
+      var completed = 0;
+      var html = '';
+      active.forEach(function (m) {
+        google.script.run
+          .withSuccessHandler(function (res) {
+            completed++;
+            if (res.success) {
+              html += previewCard(m, res.data);
+            } else {
+              html += '<div class="card" style="border-color:#f4c7c3"><p class="sub" style="color:var(--warn);margin:0"><strong>' + escapeHtml(m.questionTitle || 'Question') + '</strong> — ' + escapeHtml(res.error) + '</p></div>';
+            }
+            if (completed === active.length) container.innerHTML = html || '<div class="empty-state">No data to preview.</div>';
+          })
+          .withFailureHandler(function (err) {
+            completed++;
+            if (completed === active.length) container.innerHTML = html || '<div class="empty-state">Preview failed: ' + escapeHtml(err.message) + '</div>';
+          })
+          .previewMapping(currentFormId, JSON.stringify(m), currentSheetId);
+      });
+    }
+
+    function previewCard(m, data) {
+      var chips = '';
+      var shown = 0;
+      data.choices.forEach(function (c) {
+        if (shown >= 24) return;
+        shown++;
+        if (c === '') {
+          chips += '<span class="choice-chip blank">(blank)</span>';
+        } else {
+          chips += '<span class="choice-chip">' + escapeHtml(String(c).substring(0, 28)) + '</span>';
+        }
+      });
+      if (data.choices.length > 24) chips += '<span class="choice-chip">+' + (data.choices.length - 24) + ' more</span>';
+
+      var notes = '<span class="hint">Column ' + escapeHtml(m.column) + ' → ' + data.validChoices + ' option(s)</span>';
+      if (data.blankIncluded) notes += '<span class="hint"> · blank included</span>';
+      if (data.removedChoices > 0) notes += '<span class="hint" style="color:#7a5200"> · ' + data.removedChoices + ' removed (capacity)</span>';
+
+      return '<div class="card"><p style="margin:0 0 4px 0;font-size:13px;font-weight:500">' + escapeHtml(m.questionTitle || 'Question') +
+        ' <span class="badge b-sup">' + escapeHtml(m.questionType || '') + '</span></p>' +
+        notes + '<div style="margin-top:6px;line-height:1.6">' + chips + '</div></div>';
+    }
+
+    // ==========================================
+    // SYNC
+    // ==========================================
+    function executeSync() {
+      var active = collectMappings();
+      if (active.length === 0) { toast('Enable at least one mapping.', 'warning'); return; }
+      var btn = $('primaryBtn');
+      btn.disabled = true;
+      btn.textContent = 'Syncing...';
+      toast('Syncing ' + active.length + ' mapping(s)...', 'info');
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          btn.disabled = false;
+          btn.textContent = '⚡ Sync Now';
+          showSyncResults(res);
+          setStep(4);
+          if (res.success) toast('✓ Synced ' + res.processed + ' mapping(s)!', 'success');
+          else toast('⚠ Completed with ' + res.errors + ' error(s).', 'warning');
+        })
+        .withFailureHandler(function (err) {
+          btn.disabled = false;
+          btn.textContent = '⚡ Sync Now';
+          toast('✗ Sync failed: ' + err.message, 'error');
+        })
+        .applyMappings(currentFormId, JSON.stringify(active), currentSheetId);
+    }
+
+    function showSyncResults(res) {
+      var summary = $('syncSummary');
+      if (res.success) {
+        summary.textContent = '✅ Sync completed successfully!';
+        summary.style.color = 'var(--green)';
+      } else {
+        summary.textContent = '⚠️ Sync completed with issues.';
+        summary.style.color = '#7a5200';
+      }
+
+      var html = '<div style="display:flex;gap:8px;margin:8px 0">';
+      html += '<div style="flex:1;text-align:center;padding:10px;border-radius:8px;background:var(--green-bg)"><div style="font-size:22px;font-weight:700;color:var(--green)">' + res.processed + '</div><div style="font-size:11px;color:var(--muted)">Processed</div></div>';
+      html += '<div style="flex:1;text-align:center;padding:10px;border-radius:8px;background:var(--warn-bg)"><div style="font-size:22px;font-weight:700;color:var(--warn)">' + res.errors + '</div><div style="font-size:11px;color:var(--muted)">Errors</div></div>';
+      html += '</div>';
+
+      if (res.results && res.results.length > 0) {
+        html += '<div style="font-size:12px;max-height:180px;overflow-y:auto">';
+        res.results.forEach(function (r) {
+          var color = r.status === 'ok' ? 'var(--green)' : (r.status === 'timeout' ? '#7a5200' : 'var(--warn)');
+          html += '<div style="padding:3px 0;color:var(--muted)"><span style="color:' + color + ';font-weight:600">[' + r.status + ']</span> ' + escapeHtml(r.message || '') + '</div>';
+        });
+        html += '</div>';
+      }
+      $('syncDetails').innerHTML = html;
+    }
+
+    // ==========================================
+    // CONFIG SAVE / LOAD
+    // ==========================================
+    function saveConfig() {
+      collectMappings();
+      if (!currentFormId) { toast('No Form ID to save.', 'warning'); return; }
+      var cfg = {
+        formId: currentFormId,
+        sheetId: currentSheetId,
+        sheetName: $('sheetNameSelect').value || currentSheetName,
+        mappings: mappings.filter(function (m) { return m.enabled; }),
+        refreshInterval: parseInt($('refreshInterval').value, 10) || 60,
+        refreshOnSubmit: $('onSubmitToggle').checked,
+        autoSyncEnabled: $('autoSyncToggle').checked
+      };
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            toast('Configuration saved!', 'success');
+            applyAutoSync();
+          } else {
+            toast('Save failed: ' + res.error, 'error');
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .saveMappingsConfig(currentFormId, JSON.stringify(cfg), currentSheetId);
+    }
+
+    function loadSavedConfig() {
+      var formId = currentFormId || $('formIdInput').value.trim();
+      if (!formId) { toast('Open the wizard and pick a Form first.', 'warning'); return; }
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success && res.data) {
+            var cfg = res.data;
+            currentFormId = formId;
+            $('formIdInput').value = formId;
+            if (cfg.sheetId) { currentSheetId = cfg.sheetId; $('sheetIdInput').value = cfg.sheetId; }
+            if (cfg.sheetName) { currentSheetName = cfg.sheetName; }
+            mappings = cfg.mappings || [];
+            if (cfg.refreshInterval) $('refreshInterval').value = cfg.refreshInterval;
+            if (cfg.refreshOnSubmit) $('onSubmitToggle').checked = true;
+            if (cfg.autoSyncEnabled) $('autoSyncToggle').checked = true;
+            toast('Loaded ' + mappings.length + ' mapping(s).', 'success');
+            switchTab('wizard');
+            loadFormQuestions();
+          } else {
+            toast('No saved configuration for this form.', 'info');
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .loadMappingsConfig(formId);
+    }
+
+    function resetConfig() {
+      if (!confirm('Reset all saved configuration for this form?')) return;
+      var formId = currentFormId || $('formIdInput').value.trim();
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            toast('Configuration cleared.', 'info');
+            $('savedConfigDisplay').textContent = 'No configuration saved yet.';
+          } else {
+            toast('Reset failed: ' + res.error, 'error');
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .resetAllConfig(formId);
+    }
+
+    // ==========================================
+    // SETTINGS / AUTO-SYNC
+    // ==========================================
+    function loadSettingsTab() {
+      var formId = currentFormId || $('formIdInput').value.trim();
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success && res.data) {
+            var d = res.data;
+            $('autoSyncToggle').checked = d.enabled || d.triggerExists;
+            $('autoSyncOptions').style.display = $('autoSyncToggle').checked ? 'block' : 'none';
+            $('refreshInterval').value = d.refreshInterval;
+            $('onSubmitToggle').checked = d.refreshOnSubmit;
+            $('lastSyncInfo').textContent = d.lastSync && d.lastSync !== 'Never' ? new Date(d.lastSync).toLocaleString() : 'Never';
+          }
+        })
+        .withFailureHandler(function (err) { toast('Could not load settings: ' + err.message, 'error'); })
+        .getAutoSyncConfig(formId);
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success && res.data) {
+            var c = res.data;
+            $('savedConfigDisplay').innerHTML =
+              '<p style="margin:0 0 2px 0">' + (c.mappings ? c.mappings.length : 0) + ' mapping(s) saved</p>' +
+              '<p style="margin:0;font-size:11px">Sheet ID: ' + escapeHtml(c.sheetId || 'N/A') + '</p>';
+          }
+        })
+        .withFailureHandler(function () { $('savedConfigDisplay').textContent = 'No configuration saved yet.'; })
+        .loadMappingsConfig(formId);
+    }
+
+    function applyAutoSync() {
+      var formId = currentFormId || $('formIdInput').value.trim();
+      if (!formId) {
+        $('autoSyncOptions').style.display = $('autoSyncToggle').checked ? 'block' : 'none';
+        return;
+      }
+      var settings = {
+        enabled: $('autoSyncToggle').checked,
+        refreshInterval: parseInt($('refreshInterval').value, 10) || 60,
+        refreshOnSubmit: $('onSubmitToggle').checked
+      };
+      $('autoSyncOptions').style.display = settings.enabled ? 'block' : 'none';
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) {
+            toast(settings.enabled ? 'Auto-Sync enabled' : 'Auto-Sync disabled', 'success');
+          } else {
+            toast('Failed to update Auto-Sync: ' + res.error, 'error');
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .setAutoSyncConfig(formId, JSON.stringify(settings));
+    }
+
+    // ==========================================
+    // HISTORY
+    // ==========================================
+    function loadHistory() {
+      var formId = currentFormId || $('formIdInput').value.trim();
+      if (!formId) {
+        $('historyContent').innerHTML = '<div class="empty-state"><div class="big">📋</div>Open the wizard and pick a Form to see history.</div>';
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success && res.data && res.data.length > 0) {
+            var html = '';
+            var arr = res.data.slice().reverse();
+            arr.forEach(function (entry) {
+              var ok = entry.success;
+              html += '<div class="history-item ' + (ok ? 'ok' : 'bad') + '">';
+              html += '<div style="display:flex;justify-content:space-between"><span><strong>' + (ok ? '✓' : '✗') + ' ' + entry.mode + ' sync</strong></span><span style="color:var(--faint)">' + new Date(entry.timestamp).toLocaleString() + '</span></div>';
+              html += '<div style="color:var(--muted);margin-top:2px">Mappings: ' + entry.mappingsCount + ' · Processed: ' + entry.processed + (entry.errors > 0 ? ' · <span style="color:var(--warn)">Errors: ' + entry.errors + '</span>' : '') + '</div>';
+              html += '</div>';
+            });
+            $('historyContent').innerHTML = html;
+          } else {
+            $('historyContent').innerHTML = '<div class="empty-state"><div class="big">📋</div>No sync history yet.</div>';
+          }
+        })
+        .withFailureHandler(function (err) {
+          $('historyContent').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(err.message) + '</div>';
+        })
+        .getSyncHistory(formId);
+    }
+
+    // ==========================================
+    // TOAST + HELPERS
+    // ==========================================
+    var toastTimer = null;
+    function toast(msg, type) {
+      var box = $('toastBox');
+      box.textContent = msg;
+      box.className = 'toast toast-' + (type || 'info');
+      box.style.display = 'block';
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { box.style.display = 'none'; }, 3500);
+    }
+
+    function getDefaultColumn(index) {
+      var col = '';
+      var n = index + 1;
+      while (n > 0) {
+        var rem = (n - 1) % 26;
+        col = String.fromCharCode(65 + rem) + col;
+        n = Math.floor((n - 1) / 26);
+      }
+      return col;
+    }
+
+    function escapeHtml(text) {
+      var div = document.createElement('div');
+      div.textContent = text == null ? '' : String(text);
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

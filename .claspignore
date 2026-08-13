@@ -1,0 +1,4 @@
+.continue/**
+*.md
+.git/**
+.gitignore

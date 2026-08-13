@@ -1,0 +1,12 @@
+# Node / dependencies
+node_modules/
+
+# clasp config & auth (script ID + credentials) - keep local
+.clasp.json
+.clasprc.json
+
+# AI coding session data
+.continue/
+
+# Internal verification working notes
+*.txt
