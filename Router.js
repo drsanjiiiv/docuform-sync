@@ -506,9 +506,18 @@ function _syncGlobalAutoTrigger() {
 
 function getAutoSyncConfig(formId) {
   try {
-    const cfg = formId ? getFormConfig(formId) : null;
-    const status = getTriggerStatus();
-    const saved = getSavedConfiguration();
+    let cfg = null;
+    try { cfg = formId ? getFormConfig(formId) : null; } catch (e) {}
+    let status = { exists: false, handler: null, frequency: null };
+    let triggerWarning = "";
+    try {
+      status = getTriggerStatus();
+    } catch (e) {
+      triggerWarning = e.message;
+      Logger.log("[DocuForm Sync] getTriggerStatus failed: " + e.toString());
+    }
+    let saved = { lastSync: "Never" };
+    try { saved = getSavedConfiguration(); } catch (e) {}
     return {
       success: true,
       data: {
@@ -517,10 +526,12 @@ function getAutoSyncConfig(formId) {
         refreshOnSubmit: !!(cfg && cfg.refreshOnSubmit),
         triggerExists: status.exists,
         frequency: status.frequency || null,
-        lastSync: saved.lastSync || "Never"
+        lastSync: saved.lastSync || "Never",
+        triggerWarning: triggerWarning
       }
     };
   } catch (e) {
+    Logger.log("[DocuForm Sync] getAutoSyncConfig failed: " + e.toString());
     return { success: false, error: e.message };
   }
 }

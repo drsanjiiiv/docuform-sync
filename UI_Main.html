@@ -445,8 +445,9 @@
             setRefreshInterval(d.refreshInterval, false);
             $('onSubmitToggle').checked = d.refreshOnSubmit;
             $('lastSyncInfo').textContent = d.lastSync && d.lastSync !== 'Never' ? new Date(d.lastSync).toLocaleString() : 'Never';
+            if (d.triggerWarning) toast('Auto-repopulate trigger check failed: ' + d.triggerWarning, 'warning');
           } else {
-            toast('Could not load auto-repopulate settings.', 'error');
+            toast('Could not load auto-repopulate settings: ' + (res.error || 'unknown error'), 'error');
           }
         })
         .withFailureHandler(function (err) { toast('Could not load settings: ' + err.message, 'error'); })
