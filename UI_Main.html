@@ -223,7 +223,7 @@
       </div>
 
       <div class="setting-row" style="border-top:1px solid #f1f3f4">
-        <p><strong>Every hour</strong><span>Repopulate options on a schedule</span></p>
+        <p><strong>Auto refresh</strong><span>Repopulate options on a schedule</span></p>
         <label class="toggle-wrap">
           <input id="everyHourToggle" type="checkbox" onchange="toggleEveryHour()" />
           <span class="track"></span><span class="thumb"></span>
@@ -232,13 +232,11 @@
 
       <div id="intervalWrap" style="display:none">
         <div class="interval-seg" id="refreshInterval">
-          <button type="button" class="interval-btn" data-value="5" onclick="setRefreshInterval(5, true)">5m</button>
-          <button type="button" class="interval-btn" data-value="15" onclick="setRefreshInterval(15, true)">15m</button>
-          <button type="button" class="interval-btn" data-value="30" onclick="setRefreshInterval(30, true)">30m</button>
           <button type="button" class="interval-btn active" data-value="60" onclick="setRefreshInterval(60, true)">1h</button>
           <button type="button" class="interval-btn" data-value="360" onclick="setRefreshInterval(360, true)">6h</button>
           <button type="button" class="interval-btn" data-value="1440" onclick="setRefreshInterval(1440, true)">Daily</button>
         </div>
+        <p class="hint" style="margin-top:6px">Google add-ons can refresh at most once per hour.</p>
       </div>
 
       <p class="hint" style="margin-top:10px">Last sync: <span id="lastSyncInfo">Never</span></p>
@@ -447,6 +445,8 @@
             setRefreshInterval(d.refreshInterval, false);
             $('onSubmitToggle').checked = d.refreshOnSubmit;
             $('lastSyncInfo').textContent = d.lastSync && d.lastSync !== 'Never' ? new Date(d.lastSync).toLocaleString() : 'Never';
+          } else {
+            toast('Could not load auto-repopulate settings.', 'error');
           }
         })
         .withFailureHandler(function (err) { toast('Could not load settings: ' + err.message, 'error'); })
@@ -480,8 +480,10 @@
       };
       google.script.run
         .withSuccessHandler(function (res) {
-          if (res.success) toast('Auto-repopulate ' + (settings.enabled || settings.refreshOnSubmit ? 'updated' : 'off'), 'success');
-          else toast('Failed: ' + res.error, 'error');
+          if (!res.success) { toast('Failed: ' + res.error, 'error'); return; }
+          var warn = (res.messages || []).filter(function (m) { return m.indexOf('Warning') === 0; });
+          if (warn.length) toast(warn[0], 'warning');
+          else toast('Auto-repopulate ' + (settings.enabled || settings.refreshOnSubmit ? 'updated' : 'off'), 'success');
         })
         .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
         .setAutoSyncConfig(currentFormId, JSON.stringify(settings));

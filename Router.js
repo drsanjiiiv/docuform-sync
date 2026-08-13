@@ -446,6 +446,12 @@ function setAutoSyncConfig(formId, settingsJson) {
     }
 
     _syncGlobalAutoTrigger();
+    if (settings.enabled) {
+      const trig = _getTriggerResult();
+      if (trig && trig.success === false) {
+        messages.push("Warning: schedule trigger could not be created (" + (trig.message || "unknown") + ").");
+      }
+    }
     messages.push("Auto-Sync " + (settings.enabled ? "enabled" : "disabled") + ".");
 
     return { success: true, messages: messages };
@@ -458,12 +464,19 @@ function setAutoSyncConfig(formId, settingsJson) {
  * Keeps a single global time-driven trigger for the project, active only while
  * at least one saved configuration has Auto-Sync enabled. Multi-form safe.
  */
+var _lastTriggerResult = null;
+
+function _getTriggerResult() {
+  return _lastTriggerResult;
+}
+
 function _syncGlobalAutoTrigger() {
+  _lastTriggerResult = null;
   removeTrigger();
   const configs = getAllFormConfigs();
   for (const cfg of configs) {
     if (cfg.autoSyncEnabled) {
-      handleTrigger(cfg.refreshInterval || 60);
+      _lastTriggerResult = handleTrigger(cfg.refreshInterval || 60);
       break;
     }
   }

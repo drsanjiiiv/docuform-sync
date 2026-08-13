@@ -136,6 +136,10 @@ function _createTrigger(intervalMinutes) {
       return { success: false, message: "Invalid interval provided." };
     }
 
+    // Add-ons can only schedule a time-driven trigger once per hour at most.
+    // Clamp sub-hour values so legacy configs don't fail to create a trigger.
+    if (intervalMinutes < 60) intervalMinutes = 60;
+
     const triggerBuilder = ScriptApp.newTrigger(TRIGGER_HANDLER).timeBased();
 
     if (intervalMinutes >= 1440) {
