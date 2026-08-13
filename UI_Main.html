@@ -110,6 +110,20 @@
     }
     .range-btn:hover { background: var(--accent); color: var(--primary); border-color: var(--accent); }
 
+    .q-actions { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .reuse-select {
+      flex: 0 0 auto; max-width: 138px; height: 28px; padding: 0 22px 0 8px;
+      border: 1px solid var(--primary); border-radius: 8px; font-size: 10.5px; font-weight: 500;
+      color: var(--primary); background-color: #fff; cursor: pointer;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 12 8'><path fill='%231a73e8' d='M1.4 0L6 4.6 10.6 0 12 1.4 6 7.4 0 1.4z'/></svg>");
+      background-repeat: no-repeat; background-position: right 6px center;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      outline: none; line-height: 28px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .reuse-select:hover { background-color: var(--accent); border-color: var(--accent); }
+    .reuse-select option { color: var(--text); background: #fff; line-height: normal; }
+
     .q-pop-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; }
     .q-pop-row input { width: auto; }
 
@@ -318,6 +332,8 @@
       }
 
       var html = '';
+      var rangeNames = Object.keys(namedRanges).sort();
+      var hasRanges = rangeNames.length > 0;
       supported.forEach(function (q) {
         var cfg = qConfigs[q.id] || null;
         var src = cfg ? (cfg.rangeName || (cfg.sheetName ? cfg.sheetName + '!' + cfg.column : cfg.sheetId) + '2:' + cfg.column) : '';
@@ -327,8 +343,19 @@
         html += '<div class="q-title">' + escapeHtml(q.title || '(untitled)') + ' <span class="badge b-sup">' + escapeHtml(q.typeName) + '</span></div>';
         if (cfg) html += '<div class="q-src" title="' + escapeHtml(src) + '">↳ ' + escapeHtml(src) + '</div>';
         else html += '<div class="q-empty-src">Not syncing — pick a range</div>';
+        html += '<div class="q-actions">';
+        html += cfg
+          ? '<button class="range-btn" title="Apply a new range" onclick="openPickerDialog(\'' + q.id + '\')">Apply new range</button>'
+          : '<button class="plus-btn" title="Add range" onclick="openPickerDialog(\'' + q.id + '\')">+</button>';
+        if (hasRanges) {
+          html += '<select class="reuse-select" data-q="' + escapeHtml(q.id) + '" onchange="reuseRange(\'' + q.id + '\', this.value)"><option value="">↻ Reuse saved range</option>';
+          rangeNames.forEach(function (rn) {
+            html += '<option value="' + escapeHtml(rn) + '">' + escapeHtml(rn) + '</option>';
+          });
+          html += '</select>';
+        }
         html += '</div>';
-        html += '<button class="' + (cfg ? 'range-btn' : 'plus-btn') + '" title="' + (cfg ? 'Apply new range' : 'Add range') + '" onclick="openPickerDialog(\'' + q.id + '\')">' + (cfg ? 'Apply new range' : '+') + '</button>';
+        html += '</div>';
         html += '</div>';
       });
 
@@ -359,6 +386,18 @@
         })
         .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
         .clearQuestionMapping(currentFormId, questionId);
+    }
+
+    function reuseRange(questionId, name) {
+      if (!name) return;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (res.success) toast('✓ Reused "' + name + '" — synced ' + res.processed + ' option(s)!', 'success');
+          else toast('Failed: ' + (res.error || res.message || 'unknown'), 'error');
+          loadQuestions();
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .reuseSavedRange(currentFormId, questionId, name);
     }
 
     // ==========================================

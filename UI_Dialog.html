@@ -221,6 +221,7 @@
     var headers = [];
     var preview = [];
     var rangeName = '';
+    var originalRangeName = '';
     var advanced = { capacityColumn: '', sortOrder: 'none', includeBlank: false, startRow: 1, endRow: 0 };
 
     var pickerToken = '';
@@ -249,6 +250,7 @@
           sheetName = existing ? (existing.sheetName || '') : '';
           column = existing ? (existing.column || '') : '';
           rangeName = existing ? (existing.rangeName || '') : '';
+          originalRangeName = rangeName;
           advanced = {
             capacityColumn: existing ? (existing.capacityColumn || '') : '',
             sortOrder: existing ? (existing.sortOrder || 'none') : 'none',
@@ -327,7 +329,7 @@
         '<button class="btn" id="pickerMore" style="display:none;width:100%;margin-top:4px" onclick="pickerLoadMore()">Load more</button>' +
         '<div class="or-divider">or paste a link / ID</div>' +
         '<div class="sheet-input-row">' +
-        '  <input type="text" id="sheetIdInput" value="' + escapeHtml(sheetId) + '" placeholder="Paste Sheet link or ID" />' +
+        '  <input type="text" id="sheetIdInput" value="' + escapeHtml(sheetId) + '" placeholder="Paste Sheet link or ID" oninput="syncApplyLabel()" />' +
         '  <button class="picker-btn" id="applyBtn" onclick="applyPastedSheet()">Apply</button>' +
         '</div>' +
         '<label class="field-label" style="margin-top:12px">2. Sheet Tab</label>' +
@@ -430,7 +432,9 @@
 
     function syncApplyLabel() {
       var b = $('applyBtn');
-      if (b) b.textContent = sheetId ? 'Change Sheet' : 'Apply';
+      if (!b) return;
+      var input = $('sheetIdInput');
+      b.textContent = (input && input.value.trim()) ? 'Change Sheet' : 'Apply';
     }
 
     function loadSheetTabs(cb) {
@@ -542,8 +546,8 @@
     function renderStepName() {
       $('wizBody').innerHTML =
         '<label class="field-label">Range name</label>' +
-        '<input id="rangeNameInput" type="text" value="' + escapeHtml(rangeName || currentColumnHeader()) + '" placeholder="e.g. Country List" />' +
-        '<p class="hint-tip">*Give your range a name. It can be re-used in other questions.</p>' +
+        '<input id="rangeNameInput" type="text" value="" placeholder="e.g. Country List" />' +
+        '<p class="hint-tip">*Enter a unique range name. It can be re-used in other questions.</p>' +
         '<details class="advanced"><summary>Advanced options <span class="adv-tip">(sort, capacity, row range, +blank)</span></summary>' +
         '<div class="adv-grid">' +
         '  <div><label>Capacity column (opt)</label><input id="advCap" type="text" value="' + escapeHtml(advanced.capacityColumn) + '" placeholder="A"></div>' +
@@ -561,15 +565,19 @@
       else renderPreviewBox();
     }
 
-    function currentColumnHeader() {
-      for (var i = 0; i < headers.length; i++) {
-        if (headers[i] && getDefaultColumn(i) === column) return headers[i];
-      }
-      return '';
-    }
-
     function saveAndSync() {
       var name = $('rangeNameInput').value.trim();
+      if (!name) { toast('Range name is required.', 'warning'); return; }
+      var taken = {};
+      Object.keys(namedRanges).forEach(function (k) { taken[k] = true; });
+      Object.keys(qConfigs).forEach(function (qid) {
+        var rn = qConfigs[qid].rangeName;
+        if (rn) taken[rn] = true;
+      });
+      if (taken[name] && name !== originalRangeName) {
+        toast('That range name already exists. Choose a unique name.', 'warning');
+        return;
+      }
       var adv = {
         capacityColumn: $('advCap').value.trim(),
         sortOrder: $('advSort').value,

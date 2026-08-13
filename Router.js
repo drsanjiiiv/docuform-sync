@@ -260,6 +260,34 @@ function clearQuestionMapping(formId, questionId) {
   }
 }
 
+function reuseSavedRange(formId, questionId, rangeName) {
+  try {
+    if (!formId || !questionId || !rangeName) {
+      return { success: false, error: 'Missing range or question.' };
+    }
+    const c = getFormConfig(formId) || {};
+    const r = (c.namedRanges || {})[String(rangeName)];
+    if (!r) return { success: false, error: 'Saved range "' + rangeName + '" not found.' };
+    const qcfg = {
+      enabled: true,
+      sheetId: r.sheetId,
+      sheetName: r.sheetName || '',
+      column: r.column,
+      capacityColumn: r.capacityColumn || '',
+      sortColumn: r.sortColumn || '',
+      sortOrder: r.sortOrder || 'none',
+      startRow: r.startRow || 1,
+      endRow: r.endRow || 0,
+      includeBlank: !!r.includeBlank,
+      rangeName: String(rangeName)
+    };
+    saveQuestionConfig(formId, String(questionId), qcfg);
+    return syncQuestion(formId, String(questionId));
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
 function loadQuestionMappings(formId) {
   try {
     const c = getFormConfig(formId) || {};
