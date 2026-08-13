@@ -3,6 +3,7 @@
 <head>
   <base target="_top">
   <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+  <script src="https://apis.google.com/js/api.js"></script>
 
   <!-- ==========================================
        STYLES (DocuMail Pro palette)
@@ -73,19 +74,42 @@
 
     .card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px; margin-bottom: 12px;
+      border-radius: 12px; padding: 14px; margin-bottom: 12px;
+      transition: box-shadow 0.2s;
     }
-    .card h3 { margin: 0 0 2px 0; font-size: 14px; font-weight: 600; }
-    .card p.sub { margin: 0 0 12px 0; font-size: 12px; color: var(--muted); }
+    .card:hover { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+    .card h3 { margin: 0 0 2px 0; font-size: 15px; font-weight: 600; }
+    .card p.sub { margin: 0 0 12px 0; font-size: 12.5px; color: var(--muted); }
 
     label.field-label { display: block; font-size: 12px; font-weight: 500; margin: 0 0 4px 0; color: var(--muted); }
     input[type=text], input[type=number], select {
-      width: 100%; padding: 8px 10px; border: 1px solid var(--border);
-      border-radius: 6px; font-size: 13px; background: var(--surface); color: var(--text);
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text);
       outline: none; box-sizing: border-box;
     }
     input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15); }
     .hint { font-size: 11px; color: var(--muted); margin: 4px 0 0 0; }
+
+    .current-form {
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--blue-bg); color: var(--primary); font-size: 13px; font-weight: 500;
+    }
+    .sheet-input-row { display: flex; gap: 6px; }
+    .sheet-input-row input { flex: 1; min-width: 0; }
+    .sheet-input-row .picker-btn {
+      flex: 0 0 auto; padding: 10px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      background: var(--primary); color: #fff; border: none; cursor: pointer; transition: all 0.2s ease;
+    }
+    .sheet-input-row .picker-btn:hover { background: var(--accent); color: var(--primary); }
+
+    .interval-seg { display: flex; gap: 4px; flex-wrap: wrap; }
+    .interval-btn {
+      flex: 1 1 0; min-width: 0; padding: 8px 4px; border-radius: 8px; font-size: 11.5px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+      transition: all 0.2s ease; white-space: nowrap;
+    }
+    .interval-btn:hover { background: var(--accent); color: var(--primary); border-color: var(--accent); }
+    .interval-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
     .step-dots { display: flex; gap: 4px; margin-bottom: 12px; }
     .step-dot { flex: 1; height: 4px; border-radius: 2px; background: #e8eaed; }
@@ -94,7 +118,7 @@
 
     .q-card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 10px; margin-bottom: 8px;
+      border-radius: 12px; padding: 12px; margin-bottom: 8px;
     }
     .q-card:hover { border-color: var(--primary); }
     .q-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
@@ -124,14 +148,15 @@
 
     .sidebar-footer {
       flex-shrink: 0; border-top: 1px solid #e8eaed; background: #ffffff;
-      padding: 10px 16px; display: flex; gap: 8px;
+      padding: 10px 16px; display: flex; gap: 8px; align-items: center;
     }
     .footer-btn {
-      flex: 1; padding: 11px; border-radius: 8px; font-weight: 600; font-size: 13px;
+      flex: 1 1 0; min-width: 0; padding: 11px 8px; border-radius: 8px; font-weight: 600; font-size: 13px;
       cursor: pointer; border: none; background: var(--primary); color: #fff; transition: all 0.2s ease;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .footer-btn:hover { background: var(--accent); color: var(--primary); }
-    .footer-btn.ghost { flex: 0 0 auto; background: #fff; color: var(--muted); border: 1px solid var(--border); }
+    .footer-btn.ghost { flex: 0 1 auto; background: #fff; color: var(--muted); border: 1px solid var(--border); }
     .footer-btn.ghost:hover { background: var(--bg); color: var(--text); }
 
     .empty-state {
@@ -227,18 +252,20 @@
       <div id="step-1">
         <div class="card">
           <h3>Connect</h3>
-          <p class="sub">Link a Google Form and Spreadsheet to start syncing.</p>
+          <p class="sub">Link a Google Spreadsheet to feed this form's options.</p>
 
-          <label class="field-label">Form ID</label>
-          <input id="formIdInput" type="text" placeholder="e.g. 1a2B3c4D5e6F7g8H9i0J" />
-          <div class="btn-row" style="margin-top:6px">
-            <button class="btn" onclick="fetchFormTitle()">Verify Form</button>
-            <button class="btn" onclick="detectSheet()">Use linked sheet</button>
+          <label class="field-label">Current Form</label>
+          <div class="current-form" id="currentFormDisplay">Detecting…</div>
+          <input id="formIdInput" type="hidden" />
+
+          <label class="field-label" style="margin-top:12px">Spreadsheet</label>
+          <div class="sheet-input-row">
+            <input id="sheetIdInput" type="text" placeholder="Paste Sheet ID" />
+            <button class="picker-btn" onclick="openPicker()">📂 Browse</button>
           </div>
-          <p class="hint" id="formTitleDisplay"></p>
-
-          <label class="field-label" style="margin-top:10px">Spreadsheet ID</label>
-          <input id="sheetIdInput" type="text" placeholder="Paste Sheet ID or use linked sheet" />
+          <div class="btn-row" style="margin-top:6px">
+            <button class="btn" onclick="detectSheet()">⚡ Use linked sheet</button>
+          </div>
 
           <div id="sheetNamesWrap" style="display:none;margin-top:10px">
             <label class="field-label">Sheet Tab</label>
@@ -299,14 +326,14 @@
 
         <div id="autoSyncOptions" style="display:none">
           <label class="field-label">Refresh Interval</label>
-          <select id="refreshInterval" onchange="applyAutoSync()">
-            <option value="5">Every 5 minutes</option>
-            <option value="15">Every 15 minutes</option>
-            <option value="30">Every 30 minutes</option>
-            <option value="60" selected>Every hour</option>
-            <option value="360">Every 6 hours</option>
-            <option value="1440">Daily</option>
-          </select>
+          <div class="interval-seg" id="refreshInterval">
+            <button type="button" class="interval-btn" data-value="5" onclick="setRefreshInterval(5)">5m</button>
+            <button type="button" class="interval-btn" data-value="15" onclick="setRefreshInterval(15)">15m</button>
+            <button type="button" class="interval-btn" data-value="30" onclick="setRefreshInterval(30)">30m</button>
+            <button type="button" class="interval-btn active" data-value="60" onclick="setRefreshInterval(60)">1h</button>
+            <button type="button" class="interval-btn" data-value="360" onclick="setRefreshInterval(360)">6h</button>
+            <button type="button" class="interval-btn" data-value="1440" onclick="setRefreshInterval(1440)">Daily</button>
+          </div>
 
           <div class="setting-row">
             <p><strong>Refresh on Form Submit</strong><span>Re-sync after each response</span></p>
@@ -458,7 +485,7 @@
         currentFormId = $('formIdInput').value.trim();
         currentSheetId = $('sheetIdInput').value.trim();
         currentSheetName = $('sheetNameSelect').value || currentSheetName;
-        if (!currentFormId) { toast('Please enter a Form ID.', 'warning'); return; }
+        if (!currentFormId) { toast('Could not detect the current Form — reopen the sidebar.', 'warning'); return; }
         if (!currentSheetId) { toast('Paste a Spreadsheet ID or tap "Use linked sheet".', 'warning'); return; }
         loadFormQuestions();
         return;
@@ -488,15 +515,15 @@
     // STEP 1 : CONNECT
     // ==========================================
     function fetchFormTitle() {
-      var formId = $('formIdInput').value.trim();
+      var formId = currentFormId || $('formIdInput').value.trim();
       if (!formId) { toast('Enter a Form ID first.', 'warning'); return; }
       google.script.run
         .withSuccessHandler(function (res) {
           if (res.success) {
-            $('formTitleDisplay').textContent = '✓ ' + res.data;
+            $('currentFormDisplay').textContent = '📋 ' + res.data;
             toast('Form verified: ' + res.data, 'success');
           } else {
-            $('formTitleDisplay').textContent = '✗ ' + res.error;
+            $('currentFormDisplay').textContent = '✗ ' + res.error;
             toast(res.error, 'error');
           }
         })
@@ -786,7 +813,7 @@
         sheetId: currentSheetId,
         sheetName: $('sheetNameSelect').value || currentSheetName,
         mappings: mappings.filter(function (m) { return m.enabled; }),
-        refreshInterval: parseInt($('refreshInterval').value, 10) || 60,
+        refreshInterval: getRefreshInterval() || 60,
         refreshOnSubmit: $('onSubmitToggle').checked,
         autoSyncEnabled: $('autoSyncToggle').checked
       };
@@ -815,7 +842,7 @@
             if (cfg.sheetId) { currentSheetId = cfg.sheetId; $('sheetIdInput').value = cfg.sheetId; }
             if (cfg.sheetName) { currentSheetName = cfg.sheetName; }
             mappings = cfg.mappings || [];
-            if (cfg.refreshInterval) $('refreshInterval').value = cfg.refreshInterval;
+            if (cfg.refreshInterval) setRefreshInterval(cfg.refreshInterval);
             if (cfg.refreshOnSubmit) $('onSubmitToggle').checked = true;
             if (cfg.autoSyncEnabled) $('autoSyncToggle').checked = true;
             toast('Loaded ' + mappings.length + ' mapping(s).', 'success');
@@ -856,7 +883,7 @@
             var d = res.data;
             $('autoSyncToggle').checked = d.enabled || d.triggerExists;
             $('autoSyncOptions').style.display = $('autoSyncToggle').checked ? 'block' : 'none';
-            $('refreshInterval').value = d.refreshInterval;
+            setRefreshInterval(d.refreshInterval);
             $('onSubmitToggle').checked = d.refreshOnSubmit;
             $('lastSyncInfo').textContent = d.lastSync && d.lastSync !== 'Never' ? new Date(d.lastSync).toLocaleString() : 'Never';
           }
@@ -885,7 +912,7 @@
       }
       var settings = {
         enabled: $('autoSyncToggle').checked,
-        refreshInterval: parseInt($('refreshInterval').value, 10) || 60,
+        refreshInterval: getRefreshInterval() || 60,
         refreshOnSubmit: $('onSubmitToggle').checked
       };
       $('autoSyncOptions').style.display = settings.enabled ? 'block' : 'none';
@@ -945,6 +972,68 @@
       box.style.display = 'block';
       if (toastTimer) clearTimeout(toastTimer);
       toastTimer = setTimeout(function () { box.style.display = 'none'; }, 3500);
+    }
+
+    // ==========================================
+    // REFRESH INTERVAL (segmented buttons)
+    // ==========================================
+    function setRefreshInterval(value) {
+      value = parseInt(value, 10) || 60;
+      document.querySelectorAll('#refreshInterval .interval-btn').forEach(function (b) {
+        b.classList.toggle('active', parseInt(b.getAttribute('data-value'), 10) === value);
+      });
+    }
+    function getRefreshInterval() {
+      var active = document.querySelector('#refreshInterval .interval-btn.active');
+      return active ? parseInt(active.getAttribute('data-value'), 10) : 60;
+    }
+
+    // ==========================================
+    // SPREADSHEET PICKER (Google Picker API)
+    // ==========================================
+    var __pickerCfg = null;
+
+    function openPicker() {
+      google.script.run
+        .withSuccessHandler(function (cfg) {
+          if (!cfg || !cfg.appId || !cfg.developerKey) {
+            toast('Picking needs a Cloud API key — set PICKER_APP_ID / PICKER_DEVELOPER_KEY in Code.gs (see README).', 'warning');
+            return;
+          }
+          __pickerCfg = cfg;
+          if (typeof gapi !== 'undefined' && gapi.load) {
+            gapi.load('picker', buildAndShowPicker);
+          } else {
+            toast('Picker library not loaded. Please reopen the sidebar.', 'warning');
+          }
+        })
+        .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
+        .getPickerConfig();
+    }
+
+    function buildAndShowPicker() {
+      var view = new google.picker.View(google.picker.ViewId.SPREADSHEETS);
+      var picker = new google.picker.PickerBuilder()
+        .enableFeature(google.picker.Feature.NAV_HIDDEN)
+        .setAppId(__pickerCfg.appId)
+        .setDeveloperKey(__pickerCfg.developerKey)
+        .setOAuthToken(__pickerCfg.token)
+        .addView(view)
+        .setCallback(pickerCallback)
+        .build();
+      picker.setVisible(true);
+    }
+
+    function pickerCallback(data) {
+      if (data.action === google.picker.Action.PICKED) {
+        var doc = data[google.picker.Response.DOCUMENTS][0];
+        var id = doc[google.picker.Document.ID];
+        var name = doc[google.picker.Document.NAME] || 'Sheet';
+        $('sheetIdInput').value = id;
+        currentSheetId = id;
+        toast('Sheet selected: ' + name, 'success');
+        fetchSheetNames();
+      }
     }
 
     function getDefaultColumn(index) {

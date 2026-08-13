@@ -35,6 +35,22 @@ Unlike traditional sync tools, DocuForm Sync gives you complete control straight
 
 ---
 
+## 📂 Spreadsheet Picker Setup
+
+The **📂 Browse** button uses the [Google Picker API](https://developers.google.com/drive/picker) with the `drive.file` scope, so users grant access to exactly the sheet they select. To enable it, configure your Google Cloud project and fill in two constants at the top of `Code.gs`:
+
+1. Open the Apps Script project → **Project Settings** → note the **Google Cloud Platform (GCP) Project number**.
+2. In the Cloud Console for that project:
+   - Enable the **Picker API**.
+   - Create a **Browser API key** (no referrer restriction).
+3. In `Code.gs`, set:
+   - `PICKER_APP_ID = "<your Cloud project number>"` (e.g. `123456789012`)
+   - `PICKER_DEVELOPER_KEY = "<your Browser API key>"`
+
+Until these are set, the Browse button shows a hint and the manual "paste a Sheet ID" / "⚡ Use linked sheet" paths still work.
+
+---
+
 ## 🛡️ Privacy & Security
 DocuForm Sync is designed for privacy-first operation. All reading, filtering, and writing happens directly inside your native Google Workspace environment — data never leaves your Google account.
 

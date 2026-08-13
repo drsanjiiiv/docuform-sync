@@ -52,6 +52,7 @@ function INITIALIZE_ADDON_SIDEBAR() {
     }
     var html = HtmlService.createHtmlOutputFromFile("UI_Main")
       .setTitle("⚡ " + APP_NAME)
+      .setWidth(380)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
     FormApp.getUi().showSidebar(html);
   } catch (err) {
@@ -119,4 +120,28 @@ function getAllFormConfigs() {
     } catch (e) {}
   }
   return out;
+}
+
+// ============================ FILE PICKER ============================
+
+/**
+ * Picker config for the Google Picker API in the sidebar.
+ * Fill in the two constants below from your Google Cloud project
+ * (see README > "Spreadsheet picker"):
+ *   - PICKER_APP_ID:        the Cloud project number (e.g. 123456789012)
+ *   - PICKER_DEVELOPER_KEY: a Browser API key (no referrer restriction)
+ */
+var PICKER_APP_ID = "";
+var PICKER_DEVELOPER_KEY = "";
+
+function getPickerConfig() {
+  return {
+    appId: PICKER_APP_ID,
+    developerKey: PICKER_DEVELOPER_KEY,
+    token: ScriptApp.getOAuthToken()
+  };
+}
+
+function getOAuthToken() {
+  return ScriptApp.getOAuthToken();
 }
