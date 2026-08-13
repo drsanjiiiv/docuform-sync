@@ -73,21 +73,27 @@ function getSheetNames(sheetId) {
   }
 }
 
-function listSpreadsheets(maxResults) {
+function searchSpreadsheets(query, maxResults, token) {
   try {
     const max = Math.min(maxResults || 50, 100);
+    let it;
+    if (token) {
+      it = DriveApp.continueFileIterator(token);
+    } else {
+      const q = (query || "").trim();
+      const base = 'mimeType = "application/vnd.google-apps.spreadsheet" and trashed = false';
+      it = DriveApp.searchFiles(q ? 'title contains "' + q.replace(/"/g, '\\"') + '" and ' + base : base);
+    }
     const out = [];
-    const files = DriveApp.searchFiles(
-      'mimeType = "application/vnd.google-apps.spreadsheet" and trashed = false'
-    );
-    while (files.hasNext() && out.length < max) {
-      const f = files.next();
+    while (it.hasNext() && out.length < max) {
+      const f = it.next();
       out.push({ id: f.getId(), name: f.getName() });
     }
-    if (out.length === 0) {
-      return { success: true, data: [], message: "No spreadsheets found in your Drive." };
+    let nextToken = "";
+    if (out.length === max && it.hasNext()) {
+      try { nextToken = it.getContinuationToken(); } catch (e) {}
     }
-    return { success: true, data: out };
+    return { success: true, data: out, nextToken: nextToken };
   } catch (e) {
     return { success: false, error: e.message };
   }

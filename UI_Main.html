@@ -74,7 +74,7 @@
       transition: all 0.2s ease;
       display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
     }
-    .btn:hover { background: var(--bg); }
+    .btn:hover { background: #e8eaed; }
     .btn-sm { padding: 6px 10px; font-size: 11.5px; }
 
     .q-row {
@@ -184,6 +184,21 @@
       display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
     }
     .sheet-input-row .picker-btn:hover { background: var(--accent); color: var(--primary); }
+
+    .btn.primary { background: var(--primary); color: #fff; border: none; }
+    .btn.primary:hover { background: var(--accent); color: var(--primary); }
+
+    .picker-search { margin-bottom: 8px; }
+    .picker-list { max-height: 40vh; overflow-y: auto; }
+    .sheet-pick {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface); cursor: pointer; margin-bottom: 6px; text-align: left;
+      transition: all 0.2s ease;
+    }
+    .sheet-pick:hover { background: var(--accent); border-color: var(--accent); }
+    .sheet-pick-icon { font-size: 15px; flex-shrink: 0; }
+    .sheet-pick-name { font-size: 12.5px; color: var(--text); font-weight: 500; word-break: break-word; }
 
     .preview-box {
       border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
@@ -300,7 +315,22 @@
 
       <div class="wiz-nav">
         <button class="btn ghost" id="modalBackBtn" onclick="modalBack()">← Back</button>
-        <button class="btn primary" id="modalNextBtn" style="background:var(--primary);color:#fff;border:none" onclick="modalNext()">Next →</button>
+        <button class="btn primary" id="modalNextBtn" onclick="modalNext()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SHEET PICKER DIALOG ===== -->
+  <div id="sheetPicker" class="modal-overlay" style="display:none">
+    <div class="modal" style="max-height:88%">
+      <div class="modal-head">
+        <strong>Choose a spreadsheet</strong>
+        <button class="modal-close" onclick="closeSheetPicker()">✕</button>
+      </div>
+      <div class="wiz-body scrollbar-thin" style="padding-top:12px">
+        <input class="picker-search" id="sheetPickerSearch" type="text" placeholder="🔍  Search your spreadsheets…" oninput="onPickerSearchInput()" />
+        <div class="picker-list" id="sheetPickerList"></div>
+        <button class="btn" id="sheetPickerMore" style="display:none;margin-top:8px;width:100%" onclick="pickerLoadMore()">Load more</button>
       </div>
     </div>
   </div>
@@ -518,57 +548,20 @@
 
     function renderStepSheet() {
       $('wizBody').innerHTML =
-        '<label class="field-label">Choose a spreadsheet</label>' +
-        '<select id="modalSpreadsheetSelect" onchange="onSpreadsheetPick(this.value)">' +
-        '  <option value="">⏳ Loading your sheets…</option>' +
-        '</select>' +
-        '<div style="display:flex;align-items:center;gap:6px;margin-top:10px">' +
-        '  <div style="flex:1;height:1px;background:var(--border)"></div>' +
-        '  <span style="font-size:11px;color:var(--faint);flex-shrink:0">or paste a Sheet link / ID</span>' +
-        '  <div style="flex:1;height:1px;background:var(--border)"></div>' +
-        '</div>' +
-        '<div class="sheet-input-row" style="margin-top:8px">' +
-        '  <input id="modalSheetIdInput" type="text" value="' + escapeHtml(modalSheetId) + '" placeholder="Paste Sheet ID" />' +
+        '<label class="field-label">Spreadsheet</label>' +
+        '<div class="sheet-input-row">' +
+        '  <input id="modalSheetIdInput" type="text" value="' + escapeHtml(modalSheetId) + '" placeholder="Paste Sheet link or ID" />' +
         '  <button class="picker-btn" onclick="applyPastedSheet()">Apply</button>' +
         '</div>' +
-        '<div style="margin-top:6px">' +
-        '  <button class="btn btn-sm" onclick="useLinkedSheet()">⚡ Use linked sheet</button>' +
+        '<div style="display:flex;gap:6px;margin-top:8px">' +
+        '  <button class="btn btn-sm" style="flex:1" onclick="openSheetPicker()">📂 Browse</button>' +
+        '  <button class="btn btn-sm" style="flex:1" onclick="useLinkedSheet()">⚡ Linked sheet</button>' +
         '</div>' +
         '<label class="field-label" style="margin-top:10px">Sheet Tab</label>' +
         '<select id="modalSheetNameSelect"></select>';
 
-      loadSpreadsheetList();
       loadSheetNamesForModal();
       if (!modalSheetId) useLinkedSheet();
-    }
-
-    function loadSpreadsheetList() {
-      google.script.run
-        .withSuccessHandler(function (res) {
-          var sel = $('modalSpreadsheetSelect');
-          if (!sel) return;
-          if (!res.success || !res.data.length) {
-            sel.innerHTML = '<option value="">' + escapeHtml((res && res.message) || 'No spreadsheets found') + '</option>';
-            return;
-          }
-          var opts = '<option value="">-- Select a spreadsheet --</option>';
-          res.data.forEach(function (s) {
-            opts += '<option value="' + escapeHtml(s.id) + '"' + (s.id === modalSheetId ? ' selected' : '') + '>' + escapeHtml(s.name) + '</option>';
-          });
-          sel.innerHTML = opts;
-        })
-        .withFailureHandler(function (err) {
-          var sel = $('modalSpreadsheetSelect');
-          if (sel) sel.innerHTML = '<option value="">Could not load sheets</option>';
-        })
-        .listSpreadsheets(100);
-    }
-
-    function onSpreadsheetPick(id) {
-      if (!id) return;
-      modalSheetId = id;
-      $('modalSheetIdInput').value = id;
-      loadSheetNamesForModal();
     }
 
     function extractSheetId(value) {
@@ -586,6 +579,85 @@
       if (!id) { toast('Paste a Sheet ID or link.', 'warning'); return; }
       modalSheetId = id;
       $('modalSheetIdInput').value = id;
+      loadSheetNamesForModal();
+    }
+
+    // --- spreadsheet picker dialog ---
+    var pickerToken = '';
+    var pickerQuery = '';
+    var pickerItems = [];
+    var pickerLoading = false;
+    var pickerSearchTimer = null;
+
+    function openSheetPicker() {
+      $('sheetPicker').style.display = 'flex';
+      pickerToken = '';
+      pickerQuery = '';
+      pickerItems = [];
+      $('sheetPickerSearch').value = '';
+      $('sheetPickerMore').style.display = 'none';
+      runPickerSearch();
+    }
+
+    function closeSheetPicker() {
+      $('sheetPicker').style.display = 'none';
+    }
+
+    function onPickerSearchInput() {
+      if (pickerSearchTimer) clearTimeout(pickerSearchTimer);
+      pickerSearchTimer = setTimeout(function () {
+        pickerQuery = $('sheetPickerSearch').value;
+        pickerToken = '';
+        pickerItems = [];
+        runPickerSearch();
+      }, 350);
+    }
+
+    function runPickerSearch() {
+      if (pickerLoading) return;
+      pickerLoading = true;
+      $('sheetPickerList').innerHTML = '<div class="empty-state"><div class="big">⏳</div>Loading…</div>';
+      google.script.run
+        .withSuccessHandler(function (res) {
+          pickerLoading = false;
+          if (!res.success) {
+            $('sheetPickerList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(res.error) + '</div>';
+            return;
+          }
+          pickerItems = pickerItems.concat(res.data || []);
+          renderPickerList();
+          $('sheetPickerMore').style.display = res.nextToken ? 'block' : 'none';
+          pickerToken = res.nextToken || '';
+        })
+        .withFailureHandler(function (err) {
+          pickerLoading = false;
+          $('sheetPickerList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>' + escapeHtml(err.message) + '</div>';
+        })
+        .searchSpreadsheets(pickerQuery, 50, pickerToken);
+    }
+
+    function pickerLoadMore() {
+      runPickerSearch();
+    }
+
+    function renderPickerList() {
+      var list = $('sheetPickerList');
+      if (!pickerItems.length) {
+        list.innerHTML = '<div class="empty-state"><div class="big">🗂️</div>No spreadsheets found.</div>';
+        return;
+      }
+      list.innerHTML = pickerItems.map(function (s) {
+        return '<button type="button" class="sheet-pick" onclick="onSheetPicked(\'' + escapeHtml(s.id) + '\')">' +
+          '<span class="sheet-pick-icon">📊</span>' +
+          '<span class="sheet-pick-name">' + escapeHtml(s.name) + '</span></button>';
+      }).join('');
+    }
+
+    function onSheetPicked(id) {
+      modalSheetId = id;
+      $('modalSheetIdInput').value = id;
+      closeSheetPicker();
+      toast('Sheet selected.', 'success');
       loadSheetNamesForModal();
     }
 
@@ -622,10 +694,6 @@
         })
         .withFailureHandler(function (err) { toast('Error: ' + err.message, 'error'); })
         .getSheetNames(id);
-    }
-
-    function pickSpreadsheet() {
-      toast('Choose a spreadsheet from the list above, or paste a Sheet link / ID.', 'info');
     }
 
     // --- step 2 : select range ---

@@ -39,9 +39,9 @@ Unlike traditional sync tools, DocuForm Sync gives you complete control straight
 
 The **Select Sheet** step works **out of the box** — no API keys or Cloud setup needed:
 
-1. Pick a spreadsheet from your Drive (listed automatically via the add-on's read-only Drive scope), or
+1. **📂 Browse** opens a searchable spreadsheet picker (with Load more for large Drives), or
 2. Paste a Sheet **link / ID**, or
-3. Use **⚡ Use linked sheet** (the form's response destination).
+3. Use **⚡ Linked sheet** (the form's response destination).
 
 The full picker is handled server-side inside the add-on, so there is nothing for end users (e.g. MSME staff) to configure.
 
